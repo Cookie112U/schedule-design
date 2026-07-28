@@ -1,0 +1,76 @@
+.app[data-holiday="tagil-day"] {
+  background:
+    radial-gradient(circle at 10% 16%, rgba(255, 159, 28, 0.2), transparent 9rem),
+    radial-gradient(circle at 88% 30%, rgba(255, 159, 28, 0.16), transparent 16rem),
+    radial-gradient(circle at 92% 76%, rgba(78, 92, 104, 0.2), transparent 18rem),
+    linear-gradient(135deg, color-mix(in srgb, var(--bg) 88%, #727b84), var(--bg) 44%),
+    var(--bg);
+}
+
+.app[data-holiday="tagil-day"] .holiday-ribbon {
+  position: fixed;
+  right: 36px;
+  bottom: 34px;
+  width: 230px;
+  height: 190px;
+  opacity: 0.86;
+  background:
+    linear-gradient(180deg, #4e5962 0 12px, transparent 12px),
+    linear-gradient(90deg, transparent 102px, #4e5962 102px 122px, transparent 122px),
+    radial-gradient(ellipse at 54% 74%, rgba(255, 159, 28, 0.32) 0 72px, transparent 73px),
+    linear-gradient(145deg, transparent 0 45%, #6c747b 46% 52%, transparent 53%),
+    linear-gradient(35deg, transparent 0 43%, #4e5962 44% 52%, transparent 53%);
+  border-radius: 16px;
+  filter: drop-shadow(0 18px 28px rgba(0, 0, 0, 0.2));
+}
+
+.app[data-holiday="tagil-day"] .garland {
+  display: none;
+}
+
+.app[data-holiday="tagil-day"] .snowfall::before {
+  content: "";
+  position: fixed;
+  left: 52%;
+  bottom: 42px;
+  width: 46px;
+  height: 46px;
+  background:
+    radial-gradient(circle, rgba(255, 45, 25, 0.86) 0 8px, transparent 9px),
+    radial-gradient(circle, rgba(255, 155, 34, 0.7) 0 19px, transparent 20px),
+    radial-gradient(circle, rgba(255, 220, 80, 0.34) 0 30px, transparent 31px);
+  border-radius: 50%;
+  filter: blur(1px);
+  animation: forge-flame 1.6s ease-in-out infinite alternate;
+}
+
+@keyframes forge-flame {
+  from { transform: scale(0.82); opacity: 0.65; }
+  to { transform: scale(1.15); opacity: 0.95; }
+}
+
+.app[data-holiday="tagil-day"] .holiday-ribbon::before {
+  content: "";
+  position: absolute;
+  right: 34px;
+  bottom: 48px;
+  width: 84px;
+  height: 118px;
+  background:
+    linear-gradient(90deg, transparent 26px, #5d646b 26px 36px, transparent 36px 48px, #5d646b 48px 58px, transparent 58px),
+    linear-gradient(180deg, #5d646b 0 12px, transparent 12px 26px, #5d646b 26px 38px, transparent 38px),
+    linear-gradient(180deg, transparent 0 70%, #5d646b 70% 100%);
+  clip-path: polygon(40% 0, 60% 0, 60% 18%, 80% 18%, 80% 100%, 20% 100%, 20% 18%, 40% 18%);
+}
+
+.app[data-holiday="tagil-day"] .holiday-ribbon::after {
+  content: "";
+  position: absolute;
+  left: 18px;
+  bottom: 28px;
+  width: 122px;
+  height: 58px;
+  background: linear-gradient(145deg, transparent 0 28%, #6f777d 29% 54%, transparent 55%);
+  border-radius: 0 0 40% 40%;
+  box-shadow: 28px -14px 0 -5px rgba(255, 159, 28, 0.32);
+}

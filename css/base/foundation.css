@@ -1,0 +1,104 @@
+﻿:root {
+  --accent: #f4ff00;
+  --accent-ink: #ffffff;
+  --bg: #ebebeb;
+  --surface: #ffffff;
+  --soft: #f3f3f3;
+  --calendar-soft: #e9f8ff;
+  --calendar-weekend: #f1f1f1;
+  --calendar-other: #f7f7f7;
+  --ink: #2b2b2b;
+  --muted: #6f6f6f;
+  --line: #bdbdbd;
+  --lesson: #f7f7f7;
+  --lesson-divider: #dedede;
+  --success: #2fc36b;
+  --danger: #f04a4a;
+  --shadow: 0 24px 60px rgba(0, 0, 0, 0.12);
+  --radius: 10px;
+  --tile: 92px;
+  --control: 60px;
+  --gap: 20px;
+  --page-pad: min(7vw, 100px);
+  --font-scale: 1;
+}
+
+:root[data-theme="dark"],
+.app[data-theme="dark"] {
+  --bg: #282828;
+  --surface: #373737;
+  --soft: #484848;
+  --calendar-soft: #4c5559;
+  --ink: #ffffff;
+  --muted: #c8c8c8;
+  --line: #777777;
+  --lesson: #444444;
+  --calendar-weekend: #3f3f3f;
+  --calendar-other: #353535;
+  --lesson-divider: #5d5d5d;
+  --shadow: none;
+}
+
+:root[data-size="small"],
+.app[data-size="small"] {
+  --tile: 86px;
+  --control: 50px;
+  --gap: 14px;
+  --page-pad: min(5vw, 72px);
+  --font-scale: 0.92;
+}
+
+:root[data-size="large"],
+.app[data-size="large"] {
+  --tile: 100px;
+  --control: 70px;
+  --gap: 28px;
+  --page-pad: min(8vw, 126px);
+  --font-scale: 1.08;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  min-height: 100%;
+  background: var(--bg);
+}
+
+body {
+  margin: 0;
+  color: var(--ink);
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 16px;
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+svg {
+  width: 24px;
+  height: 24px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.app {
+  position: relative;
+  min-height: 100vh;
+  padding: 48px var(--page-pad) 36px;
+  background: var(--bg);
+  transition: background 0.2s ease, color 0.2s ease;
+}
+

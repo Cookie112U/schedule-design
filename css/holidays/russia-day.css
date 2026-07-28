@@ -1,0 +1,38 @@
+.app[data-holiday="russia-day"] {
+  background:
+    radial-gradient(circle at 4% 30%, rgba(255, 255, 255, 0.72), transparent 12rem),
+    radial-gradient(circle at 4% 50%, rgba(47, 103, 216, 0.32), transparent 13rem),
+    radial-gradient(circle at 4% 70%, rgba(226, 61, 61, 0.3), transparent 13rem),
+    radial-gradient(circle at 96% 30%, rgba(255, 255, 255, 0.72), transparent 12rem),
+    radial-gradient(circle at 96% 50%, rgba(47, 103, 216, 0.32), transparent 13rem),
+    radial-gradient(circle at 96% 70%, rgba(226, 61, 61, 0.3), transparent 13rem),
+    var(--bg);
+}
+
+.app[data-holiday="russia-day"] .flag-wave {
+  position: fixed;
+  left: -5vw;
+  right: -5vw;
+  bottom: -22px;
+  height: 150px;
+  background:
+    linear-gradient(180deg, #ffffff 0 34%, #2f67d8 34% 67%, #e23d3d 67% 100%);
+  clip-path: polygon(0 14%, 7% 8%, 16% 13%, 25% 7%, 34% 12%, 43% 8%, 52% 14%, 61% 9%, 70% 15%, 80% 9%, 90% 14%, 100% 10%, 100% 100%, 0 100%);
+  filter:
+    drop-shadow(0 -2px 0 rgba(0, 0, 0, 0.22))
+    drop-shadow(0 -10px 24px rgba(47, 103, 216, 0.12));
+  opacity: 0.9;
+  animation: flag-wave 5s ease-in-out infinite alternate;
+}
+
+.app[data-holiday="russia-day"] .flag-wave::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.14) 0 1px, transparent 1px 33%, rgba(0, 0, 0, 0.16) 33% calc(33% + 1px), transparent calc(33% + 1px) 66%, rgba(0, 0, 0, 0.13) 66% calc(66% + 1px), transparent calc(66% + 1px));
+}
+
+@keyframes flag-wave {
+  from { transform: translateY(0); }
+  to { transform: translateY(12px); }
+}

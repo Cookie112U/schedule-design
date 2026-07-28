@@ -1,0 +1,48 @@
+.app[data-holiday="new-year"] {
+  background:
+    radial-gradient(circle at 0% 18%, rgba(196, 232, 255, 0.38), transparent 22rem),
+    radial-gradient(circle at 100% 82%, rgba(219, 242, 255, 0.34), transparent 24rem),
+    var(--bg);
+}
+
+.app[data-theme="dark"][data-holiday="new-year"] {
+  background:
+    radial-gradient(circle at 0% 18%, rgba(61, 100, 130, 0.22), transparent 24rem),
+    radial-gradient(circle at 100% 82%, rgba(50, 83, 106, 0.18), transparent 24rem),
+    var(--bg);
+}
+
+.app[data-holiday="new-year"] .garland {
+  position: fixed;
+  top: 4px;
+  left: 0;
+  right: 0;
+  height: 82px;
+  background-image:
+    url("data:image/svg+xml,%3Csvg width='280' height='56' viewBox='0 0 280 56' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 22 C38 47 72 8 112 23 S186 47 224 21 S260 8 280 22' stroke='%23111111' stroke-width='3' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: repeat-x;
+  background-size: 280px 56px;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.22));
+}
+
+.app[data-holiday="new-year"] .garland::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 24px 34px, rgba(255, 76, 76, 0.95) 0 7px, transparent 10px),
+    radial-gradient(circle at 70px 17px, rgba(244, 255, 0, 0.95) 0 7px, transparent 10px),
+    radial-gradient(circle at 116px 29px, rgba(63, 140, 255, 0.95) 0 7px, transparent 10px),
+    radial-gradient(circle at 164px 35px, rgba(51, 194, 127, 0.95) 0 7px, transparent 10px),
+    radial-gradient(circle at 214px 20px, rgba(255, 112, 184, 0.95) 0 7px, transparent 10px),
+    radial-gradient(circle at 260px 31px, rgba(255, 76, 76, 0.9) 0 7px, transparent 10px);
+  background-size: 280px 56px;
+  filter: blur(0.3px) drop-shadow(0 0 8px rgba(244, 255, 0, 0.7));
+  animation: lights-blink 2.4s ease-in-out infinite alternate;
+}
+
+@keyframes lights-blink {
+  0%, 35% { opacity: 0.62; filter: blur(0.8px) drop-shadow(0 0 4px rgba(255, 255, 255, 0.3)); }
+  58% { opacity: 1; filter: blur(0.2px) drop-shadow(0 0 13px rgba(244, 255, 0, 0.95)); }
+  100% { opacity: 0.82; filter: blur(0.5px) drop-shadow(0 0 9px rgba(63, 140, 255, 0.75)); }
+}

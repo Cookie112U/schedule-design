@@ -1,0 +1,47 @@
+.app[data-holiday="march-8"] {
+  background:
+    radial-gradient(circle at 8% 22%, rgba(255, 112, 184, 0.22), transparent 14rem),
+    radial-gradient(circle at 92% 76%, rgba(255, 112, 184, 0.18), transparent 16rem),
+    var(--bg);
+}
+
+.app[data-holiday="march-8"] .holiday-ribbon {
+  position: fixed;
+  right: clamp(20px, 5vw, 58px);
+  bottom: 26px;
+  width: 160px;
+  height: 210px;
+  display: grid;
+  place-items: center;
+  color: rgba(255, 112, 184, 0.72);
+  background:
+    radial-gradient(circle, rgba(255, 112, 184, 0.24), rgba(159, 103, 255, 0.12) 56%, transparent 72%);
+  border-radius: 50%;
+  filter: drop-shadow(0 16px 26px rgba(255, 112, 184, 0.2));
+}
+
+.app[data-holiday="march-8"] .holiday-ribbon::before {
+  content: "8";
+  color: rgba(255, 112, 184, 0.92);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(132px, 14vw, 178px);
+  font-weight: 700;
+  line-height: 1;
+  text-shadow:
+    0 0 1px rgba(255, 255, 255, 0.8),
+    0 18px 28px rgba(159, 103, 255, 0.18);
+}
+
+.app[data-holiday="march-8"] .garland {
+  display: none;
+}
+
+@media (max-width: 640px) {
+  .app[data-holiday="march-8"] .holiday-ribbon {
+    right: 10px;
+    bottom: 12px;
+    width: 124px;
+    height: 160px;
+    opacity: 0.72;
+  }
+}

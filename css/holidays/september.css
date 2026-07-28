@@ -1,0 +1,70 @@
+.app[data-holiday="september"] {
+  background:
+    radial-gradient(circle at 8% 20%, rgba(255, 204, 77, 0.24), transparent 14rem),
+    radial-gradient(circle at 92% 20%, rgba(255, 204, 77, 0.22), transparent 14rem),
+    radial-gradient(circle at 8% 88%, rgba(184, 120, 45, 0.18), transparent 11rem),
+    radial-gradient(circle at 92% 88%, rgba(184, 120, 45, 0.18), transparent 11rem),
+    var(--bg);
+}
+
+.app[data-holiday="september"] .holiday-ribbon {
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 7% 93%, rgba(214, 129, 44, 0.62) 0 16px, transparent 17px),
+    radial-gradient(ellipse at 13% 97%, rgba(145, 92, 37, 0.5) 0 18px, transparent 19px),
+    radial-gradient(ellipse at 90% 94%, rgba(214, 129, 44, 0.6) 0 17px, transparent 18px),
+    radial-gradient(ellipse at 96% 98%, rgba(145, 92, 37, 0.48) 0 19px, transparent 20px);
+}
+
+.app[data-holiday="september"] .holiday-ribbon::before {
+  content: "";
+  position: fixed;
+  right: 34px;
+  top: 104px;
+  width: 118px;
+  height: 124px;
+  background:
+    url("../../Img/Bells.svg") center 8px / 102px auto no-repeat;
+  filter: drop-shadow(0 10px 14px rgba(0, 0, 0, 0.18));
+  transform-origin: 50% 4px;
+  animation: bell-swing 3.2s ease-in-out infinite;
+}
+
+.app[data-holiday="september"] .holiday-ribbon::after {
+  content: "";
+  position: fixed;
+  right: clamp(20px, 5vw, 58px);
+  bottom: 32px;
+  width: 176px;
+  height: 176px;
+  background:
+    linear-gradient(90deg, #b27a3a 0 42%, #f5d08c 42% 58%, #c8893f 58% 100%);
+  filter: drop-shadow(0 18px 24px rgba(95, 61, 30, 0.22));
+  mask: url("../../Img/OpenBook.svg") center / contain no-repeat;
+  -webkit-mask: url("../../Img/OpenBook.svg") center / contain no-repeat;
+}
+
+@keyframes bell-swing {
+  0%, 100% { transform: rotate(-8deg) translateY(0); }
+  50% { transform: rotate(8deg) translateY(4px); }
+}
+
+@media (max-width: 640px) {
+  .app[data-holiday="september"] .holiday-ribbon::before {
+    right: 14px;
+    top: 84px;
+    width: 86px;
+    height: 92px;
+    background-size: 76px auto;
+    opacity: 0.82;
+  }
+
+  .app[data-holiday="september"] .holiday-ribbon::after {
+    right: 12px;
+    bottom: 18px;
+    width: 118px;
+    height: 118px;
+    opacity: 0.82;
+  }
+}
