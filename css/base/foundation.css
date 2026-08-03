@@ -1,6 +1,6 @@
 ﻿:root {
   --accent: #f4ff00;
-  --accent-ink: #ffffff;
+  --accent-ink: #252525;
   --bg: #ebebeb;
   --surface: #ffffff;
   --soft: #f3f3f3;
@@ -16,7 +16,7 @@
   --danger: #f04a4a;
   --shadow: 0 24px 60px rgba(0, 0, 0, 0.12);
   --radius: 10px;
-  --tile: 92px;
+  --tile: 88px;
   --control: 60px;
   --gap: 20px;
   --page-pad: min(7vw, 100px);
@@ -41,10 +41,10 @@
 
 :root[data-size="small"],
 .app[data-size="small"] {
-  --tile: 86px;
-  --control: 50px;
-  --gap: 14px;
-  --page-pad: min(5vw, 72px);
+  --tile: 78px;
+  --control: 48px;
+  --gap: 16px;
+  --page-pad: min(5vw, 76px);
   --font-scale: 0.92;
 }
 
@@ -53,7 +53,7 @@
   --tile: 100px;
   --control: 70px;
   --gap: 28px;
-  --page-pad: min(8vw, 126px);
+  --page-pad: min(5vw, 80px);
   --font-scale: 1.08;
 }
 
@@ -99,6 +99,16 @@ svg {
   min-height: 100vh;
   padding: 48px var(--page-pad) 36px;
   background: var(--bg);
+  overflow-x: hidden;
   transition: background 0.2s ease, color 0.2s ease;
+}
+
+@media (min-width: 981px) and (max-width: 1360px) {
+  :root[data-size="small"],
+  .app[data-size="small"] {
+    --tile: 72px;
+    --control: 46px;
+    --gap: 16px;
+  }
 }
 

@@ -1,0 +1,77 @@
+.app[data-holiday="victory-day"] {
+  background:
+    radial-gradient(circle at 20% 18%, rgba(255, 211, 87, 0.22), transparent 24%),
+    radial-gradient(circle at 80% 82%, rgba(255, 108, 42, 0.2), transparent 35%),
+    linear-gradient(135deg, #290808 0%, #8f181a 43%, #d8492c 100%);
+}
+
+.app[data-holiday="victory-day"] .garland {
+  position: fixed;
+  right: clamp(22px, 4vw, 58px);
+  bottom: clamp(42px, 7vh, 86px);
+  z-index: 0;
+  width: clamp(270px, 32vw, 430px);
+  height: clamp(48px, 6vw, 70px);
+  background: repeating-linear-gradient(
+    90deg,
+    #E08F1A 0 24px,
+    #32281A 24px 48px
+  );
+  border-radius: 60% 20% 55% 15%;
+  box-shadow:
+    0 18px 30px rgba(0, 0, 0, 0.27),
+    inset 0 8px 15px rgba(255, 255, 255, 0.22);
+  opacity: 0.92;
+  transform: rotate(-17deg);
+}
+
+.app[data-holiday="victory-day"] .garland::after {
+  content: "";
+  position: absolute;
+  inset: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: inherit;
+}
+
+.app[data-holiday="victory-day"] .holiday-ribbon {
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(circle at 10% 24%, rgba(255, 214, 107, 0.18), transparent 16rem),
+    radial-gradient(circle at 92% 72%, rgba(184, 36, 38, 0.2), transparent 18rem);
+}
+
+.app[data-holiday="victory-day"] .snowfall::before,
+.app[data-holiday="victory-day"] .snowfall::after {
+  content: "";
+  position: fixed;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.app[data-holiday="victory-day"] .snowfall::before {
+  left: 8%;
+  top: 16%;
+  width: 180px;
+  height: 180px;
+  background: radial-gradient(circle, rgba(255, 214, 107, 0.18), transparent 68%);
+  filter: blur(8px);
+}
+
+.app[data-holiday="victory-day"] .snowfall::after {
+  right: 5%;
+  bottom: 18%;
+  width: 230px;
+  height: 230px;
+  background: radial-gradient(circle, rgba(255, 126, 58, 0.16), transparent 70%);
+  filter: blur(12px);
+}
+
+@media (max-width: 760px) {
+  .app[data-holiday="victory-day"] .garland {
+    right: 4px;
+    bottom: 34px;
+    width: 260px;
+    height: 48px;
+  }
+}

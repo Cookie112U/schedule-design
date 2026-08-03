@@ -1,0 +1,105 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -48 420 568" role="img" aria-label="Easter rabbit">
+  <defs>
+    <style>
+      .rabbit-eye {
+        transform-box: fill-box;
+        transform-origin: center;
+        animation: rabbit-blink 5.6s infinite;
+      }
+
+      .rabbit-moving-ear {
+        transform-box: fill-box;
+        transform-origin: 50% 92%;
+        animation: rabbit-ear-idle 4.8s ease-in-out infinite;
+      }
+
+      @keyframes rabbit-blink {
+        0%, 43%, 47%, 100% { transform: scaleY(1); }
+        44.5%, 46% { transform: scaleY(0.08); }
+      }
+
+      @keyframes rabbit-ear-idle {
+        0%, 72%, 100% { transform: rotate(0deg); }
+        78% { transform: rotate(5deg); }
+        85% { transform: rotate(-3deg); }
+        92% { transform: rotate(2deg); }
+      }
+    </style>
+    <radialGradient id="fur" cx="30%" cy="18%" r="82%">
+      <stop offset="0" stop-color="#fffefb"/>
+      <stop offset=".48" stop-color="#f2e7db"/>
+      <stop offset="1" stop-color="#c8b29f"/>
+    </radialGradient>
+    <linearGradient id="inner" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#efb5b8"/>
+      <stop offset="1" stop-color="#c97882"/>
+    </linearGradient>
+    <radialGradient id="belly" cx="35%" cy="22%" r="75%">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#f8eee5"/>
+    </radialGradient>
+    <radialGradient id="paw" cx="35%" cy="24%" r="76%">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset=".65" stop-color="#eadfd4"/>
+      <stop offset="1" stop-color="#c8b29f"/>
+    </radialGradient>
+    <filter id="softShadow" x="-40%" y="-40%" width="180%" height="180%">
+      <feDropShadow dx="0" dy="10" stdDeviation="9" flood-color="#4d3427" flood-opacity=".22"/>
+    </filter>
+    <filter id="smallShadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feDropShadow dx="0" dy="5" stdDeviation="4" flood-color="#51382b" flood-opacity=".2"/>
+    </filter>
+  </defs>
+
+  <ellipse cx="210" cy="486" rx="135" ry="22" fill="rgba(62,48,37,.18)"/>
+
+  <g filter="url(#smallShadow)">
+    <circle cx="337" cy="354" r="49" fill="url(#fur)"/>
+    <circle cx="321" cy="335" r="15" fill="#ffffff" opacity=".45"/>
+  </g>
+
+  <g>
+    <g>
+      <ellipse cx="150" cy="106" rx="47" ry="120" transform="rotate(-9 150 106)" fill="url(#fur)" filter="url(#smallShadow)"/>
+      <ellipse cx="151" cy="107" rx="20" ry="87" transform="rotate(-9 151 107)" fill="url(#inner)" opacity=".8"/>
+      <ellipse cx="136" cy="65" rx="12" ry="37" transform="rotate(-12 136 65)" fill="#ffffff" opacity=".42"/>
+    </g>
+    <g class="rabbit-moving-ear">
+      <ellipse cx="270" cy="106" rx="47" ry="120" transform="rotate(9 270 106)" fill="url(#fur)" filter="url(#smallShadow)"/>
+      <ellipse cx="269" cy="107" rx="20" ry="87" transform="rotate(9 269 107)" fill="url(#inner)" opacity=".8"/>
+      <ellipse cx="284" cy="65" rx="12" ry="37" transform="rotate(12 284 65)" fill="#ffffff" opacity=".42"/>
+    </g>
+  </g>
+
+  <g filter="url(#softShadow)">
+    <ellipse cx="210" cy="360" rx="136" ry="139" fill="url(#fur)"/>
+    <ellipse cx="210" cy="378" rx="80" ry="94" fill="url(#belly)" opacity=".94"/>
+    <ellipse cx="164" cy="298" rx="40" ry="65" fill="#ffffff" opacity=".14"/>
+  </g>
+
+  <g filter="url(#softShadow)">
+    <ellipse cx="210" cy="220" rx="126" ry="116" fill="url(#fur)"/>
+    <ellipse cx="164" cy="181" rx="42" ry="29" fill="#ffffff" opacity=".23"/>
+    <ellipse cx="150" cy="244" rx="42" ry="28" fill="#efb5b8" opacity=".18"/>
+    <ellipse cx="270" cy="244" rx="42" ry="28" fill="#efb5b8" opacity=".18"/>
+    <g class="rabbit-eye">
+      <ellipse cx="164" cy="210" rx="14" ry="20" fill="#332b29"/>
+      <circle cx="159" cy="204" r="4.2" fill="#ffffff"/>
+      <circle cx="169" cy="215" r="2" fill="#8c7b73"/>
+    </g>
+    <g class="rabbit-eye">
+      <ellipse cx="256" cy="210" rx="14" ry="20" fill="#332b29"/>
+      <circle cx="251" cy="204" r="4.2" fill="#ffffff"/>
+      <circle cx="261" cy="215" r="2" fill="#8c7b73"/>
+    </g>
+    <path d="M210 226c-11 0-18 7-13 15 4 6 22 6 26 0 5-8-2-15-13-15Z" fill="#b86672"/>
+    <path d="M210 242c-2 12-11 18-22 15M210 242c2 12 11 18 22 15" fill="none" stroke="#695047" stroke-width="4" stroke-linecap="round"/>
+    <path d="M154 236 92 224M153 248 87 252M266 236l62-12M267 248l66 4" stroke="#695047" stroke-width="3" stroke-linecap="round" opacity=".66"/>
+  </g>
+
+  <g filter="url(#smallShadow)">
+    <circle cx="168" cy="474" r="34" fill="url(#paw)"/>
+    <circle cx="252" cy="474" r="34" fill="url(#paw)"/>
+    <path d="M152 474h32M236 474h32" stroke="#c97882" stroke-width="4" stroke-linecap="round" opacity=".42"/>
+  </g>
+</svg>

@@ -5,7 +5,6 @@ const {
   lessonPairs,
   monthNames,
   months,
-  orangeAccent,
   teachers,
   weekdays,
   weekdaysFull
@@ -34,8 +33,7 @@ const scheduleModal = document.querySelector("#scheduleModal");
 const roomsModal = document.querySelector("#roomsModal");
 const modalLessonList = document.querySelector("#modalLessonList");
 const modalTitle = document.querySelector("#modalTitle");
-const modalDay = document.querySelector("#modalDay");
-const modalMonth = document.querySelector("#modalMonth");
+const modalDateLine = document.querySelector("#modalDateLine");
 const colorGrid = document.querySelector("#colorGrid");
 const toastStack = document.querySelector("#toastStack");
 const prevWeek = document.querySelector("#prevWeek");
@@ -60,6 +58,7 @@ const holidayAdminModal = document.querySelector("#holidayAdminModal");
 const today = new Date();
 today.setHours(0, 0, 0, 0);
 
+const maxToasts = 5;
 
 const defaults = {
   mode: "student",
@@ -128,12 +127,34 @@ function formatDateText(date) {
   return `${monthNames[date.getMonth()]}<br />${weekdaysFull[dayIndex(date)]}`;
 }
 
+function capitalize(value) {
+  return value.charAt(0).toUpperCase() + value.slice(1);
+}
+
+function setModalDateLine(date) {
+  modalDateLine.innerHTML = `
+    <span>${date.getDate()} ${monthNames[date.getMonth()]}</span>
+    <span>${capitalize(weekdaysFull[dayIndex(date)])}</span>
+  `;
+}
+
 function getEntities() {
   return [...(state.mode === "student" ? groups : teachers)].sort(sortRu);
 }
 
 function sortRu(a, b) {
   return a.localeCompare(b, "ru", { numeric: true, sensitivity: "base" });
+}
+
+function accentInkFor(color) {
+  const hex = color.replace("#", "");
+  if (!/^[0-9a-f]{6}$/i.test(hex)) return "#ffffff";
+  if (["f4ff00", "ff9f1c"].includes(hex.toLowerCase())) return "#252525";
+  const red = parseInt(hex.slice(0, 2), 16) / 255;
+  const green = parseInt(hex.slice(2, 4), 16) / 255;
+  const blue = parseInt(hex.slice(4, 6), 16) / 255;
+  const luminance = 0.2126 * red + 0.7152 * green + 0.0722 * blue;
+  return luminance > 0.72 ? "#252525" : "#ffffff";
 }
 
 function favoriteKey(entity, mode = state.mode) {
@@ -347,7 +368,7 @@ function lessonsForSelection() {
       lesson: number,
       pair: pair.label,
       time: pair.time,
-      teacher: teachers[(seed + index) % teachers.length],
+      teacher: index === 2 ? "" : teachers[(seed + index) % teachers.length],
       group: groups[(seed + index) % groups.length],
       discipline: index === 2 ? "Обед" : subjects[(seed + index) % subjects.length],
       building: `${(seed + index) % 2 ? "1" : "2"} корпус`,
@@ -360,7 +381,7 @@ function renderLessons(target) {
   target.innerHTML = "";
   lessonsForSelection().forEach((lesson) => {
     const sideLabel = state.mode === "student" ? "Педагог" : "Группа";
-    const sideValue = state.mode === "student" ? lesson.teacher : lesson.group;
+    const sideValue = state.mode === "student" ? lesson.teacher || "Не назначен" : lesson.group;
     const card = document.createElement("article");
     card.className = "lesson-card";
     card.innerHTML = `
@@ -396,22 +417,64 @@ function renderLessons(target) {
   });
 }
 
+function renderModalLessons(target) {
+  const columns = ["№ Урока", "Время", "Пара", "Дисциплина", "Педагог", "Кабинет", "Корпус"];
+  target.innerHTML = "";
+  target.className = "modal-schedule-table";
+
+  const header = document.createElement("div");
+  header.className = "modal-schedule-row modal-schedule-head";
+  header.innerHTML = columns.map((column) => `<div>${column}</div>`).join("");
+  target.append(header);
+
+  lessonsForSelection().forEach((lesson) => {
+    const fields = [
+      ["№ Урока", lesson.lesson],
+      ["Время", lesson.time],
+      ["Пара", lesson.pair],
+      ["Дисциплина", lesson.discipline],
+      ["Педагог", lesson.teacher || "Не назначен"],
+      ["Кабинет", lesson.room],
+      ["Корпус", lesson.building]
+    ];
+    const row = document.createElement("div");
+    row.className = "modal-schedule-row";
+    row.innerHTML = fields.map(([label, value]) => `<div data-label="${label}">${value}</div>`).join("");
+    target.append(row);
+  });
+}
+
 function setResultDate(dayTarget, monthTarget) {
   dayTarget.textContent = state.selectedDate.getDate();
   monthTarget.innerHTML = formatDateText(state.selectedDate);
 }
 
 function showMessage(text) {
+  const duplicate = Array.from(toastStack.querySelectorAll(".toast")).find((item) => item.dataset.message === text);
+  if (duplicate) {
+    const count = Number(duplicate.dataset.count || 1) + 1;
+    duplicate.dataset.count = String(count);
+    duplicate.textContent = `${text} x${count}`;
+    duplicate.classList.remove("pulse");
+    duplicate.offsetWidth;
+    duplicate.classList.add("pulse");
+    window.clearTimeout(duplicate.removeTimer);
+    duplicate.removeTimer = window.setTimeout(() => duplicate.remove(), 3200);
+    return;
+  }
+
   const existing = toastStack.querySelectorAll(".toast");
-  if (existing.length >= 5) {
+  if (existing.length >= maxToasts) {
     existing[0].remove();
   }
 
   const toast = document.createElement("div");
   toast.className = "toast";
+  toast.dataset.message = text;
+  toast.dataset.count = "1";
   toast.textContent = text;
   toastStack.append(toast);
-  window.setTimeout(() => toast.remove(), 3200);
+  toast.removeTimer = window.setTimeout(() => toast.remove(), 3200);
 }
 
 function hideResult() {
@@ -426,8 +489,8 @@ function showSchedule() {
 
   if (state.output === "modal") {
     modalTitle.textContent = state.selectedEntity;
-    setResultDate(modalDay, modalMonth);
-    renderLessons(modalLessonList);
+    setModalDateLine(state.selectedDate);
+    renderModalLessons(modalLessonList);
     scheduleModal.showModal();
     return;
   }
@@ -520,7 +583,7 @@ function applySettings() {
   document.documentElement.dataset.theme = state.theme;
   document.documentElement.dataset.size = state.size;
   document.documentElement.style.setProperty("--accent", state.accent);
-  document.documentElement.style.setProperty("--accent-ink", [orangeAccent, "#f4ff00"].includes(state.accent.toLowerCase()) ? "#252525" : "#ffffff");
+  document.documentElement.style.setProperty("--accent-ink", accentInkFor(state.accent));
   app.dataset.holiday = holiday;
   startHolidayParticles(holiday);
   document.querySelectorAll("[data-setting]").forEach((button) => {

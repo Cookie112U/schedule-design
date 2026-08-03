@@ -22,16 +22,8 @@
 .logo {
   width: 32px;
   height: 32px;
-  display: grid;
-  place-items: center;
-  color: #1d7d43;
-  background: #ffffff;
-  border: 2px solid #4775c6;
-  border-radius: 50%;
-  font-size: 9px;
-  font-weight: 800;
-  line-height: 0.9;
-  text-align: center;
+  display: block;
+  object-fit: contain;
 }
 
 .header-actions {
@@ -44,7 +36,7 @@
   height: 54px;
   display: grid;
   place-items: center;
-  color: #111111;
+  color: var(--accent-ink);
   background: var(--accent);
   border: 0;
   border-radius: 50%;
@@ -127,15 +119,33 @@
   position: absolute;
   top: calc(50% + 18px);
   transform: translateY(-50%);
-  width: 34px;
-  height: 58px;
-  display: grid;
-  place-items: center;
+  width: 42px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   color: var(--ink);
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: 999px;
-  font-size: 30px;
+  border-radius: 50%;
+  font-size: 0;
+  line-height: 1;
+}
+
+.month-arrow::before {
+  content: "";
+  width: 11px;
+  height: 11px;
+  border-top: 2px solid currentColor;
+  border-left: 2px solid currentColor;
+}
+
+.month-arrow-left::before {
+  transform: translateX(2px) rotate(-45deg);
+}
+
+.month-arrow-right::before {
+  transform: translateX(-2px) rotate(135deg);
 }
 
 .month-arrow-left {
@@ -177,11 +187,14 @@
   width: var(--tile);
   height: var(--tile);
   padding: calc(var(--gap) * 0.75) calc(var(--gap) * 0.7);
+  display: grid;
+  align-content: center;
+  justify-items: center;
   color: var(--ink);
   background: var(--soft);
   border: 0;
   border-radius: 18px;
-  text-align: left;
+  text-align: center;
 }
 
 .day-cell.study {
@@ -204,12 +217,13 @@
 
 .day-cell strong {
   display: block;
-  margin-bottom: 6px;
+  margin-bottom: 0;
   font-size: calc(22px * var(--font-scale));
   font-weight: 400;
 }
 
 .day-cell span {
+  margin-top: 6px;
   font-size: calc(16px * var(--font-scale));
 }
 

@@ -1,4 +1,66 @@
-﻿@media (max-width: 1180px) {
+@media (min-width: 981px) and (max-width: 1180px) {
+  .app {
+    --tile: 64px;
+    --control: 46px;
+    --gap: 12px;
+    --page-pad: 24px;
+    padding-top: 40px;
+  }
+
+  .app-header {
+    margin-bottom: 30px;
+  }
+
+  .layout {
+    grid-template-columns: minmax(0, 60%) minmax(250px, 30%);
+    gap: 10%;
+  }
+
+  .search-panel {
+    padding-top: calc(var(--control) * 1.65);
+  }
+
+  .calendar-wrap {
+    width: fit-content;
+    max-width: 100%;
+  }
+
+  .calendar-wrap > div {
+    width: auto;
+    padding-inline: 0;
+  }
+
+  .month-arrow-left {
+    left: -38px;
+  }
+
+  .month-arrow-right {
+    right: -38px;
+  }
+
+  .week-strip,
+  .calendar-grid {
+    width: auto;
+    grid-template-columns: repeat(7, var(--tile));
+  }
+
+  .day-cell {
+    width: var(--tile);
+    height: var(--tile);
+    padding: 8px;
+    border-radius: 14px;
+  }
+
+  .room-cards {
+    grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
+  }
+}
+
+@media (max-width: 980px) {
+  .app {
+    padding: 32px 20px;
+  }
+
   .layout {
     grid-template-columns: 1fr;
     gap: 24px;
@@ -8,33 +70,8 @@
     padding-top: 0;
   }
 
-  .calendar-wrap {
-    grid-template-columns: 52px 1fr 52px;
-  }
-
-  .week-strip,
-  .calendar-grid {
-    grid-template-columns: repeat(7, minmax(82px, 1fr));
-  }
-
-  .day-cell {
-    width: 100%;
-    height: auto;
-    aspect-ratio: 1;
-  }
-
-  .room-cards {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-}
-
-@media (max-width: 980px) {
-  .app {
-    padding: 32px 20px;
-  }
-
   .calendar-panel {
-    overflow: hidden;
+    overflow: visible;
   }
 
   .calendar-toolbar {
@@ -63,6 +100,12 @@
 
   .calendar-wrap {
     display: block;
+    width: 100%;
+  }
+
+  .calendar-wrap > div {
+    width: 100%;
+    padding-inline: 0;
   }
 
   .week-strip {
@@ -117,15 +160,15 @@
   .week-date {
     width: 56px;
     height: 56px;
-    font-size: 24px;
+    font-size: 22px;
   }
 
   .mode-button,
   .select-trigger,
   .primary-button,
   .secondary-button {
-    min-height: 66px;
-    font-size: 20px;
+    min-height: 58px;
+    font-size: 18px;
   }
 
   .icon-button {
@@ -202,9 +245,9 @@
   }
 
   .week-date {
-    width: 28px;
-    height: 28px;
-    font-size: 13px;
+    width: 32px;
+    height: 32px;
+    font-size: 14px;
   }
 
   .result-date strong {
@@ -230,7 +273,8 @@
   }
 
   .toast-stack {
-    right: 16px;
-    bottom: 16px;
+    right: 12px;
+    bottom: 12px;
+    transform: none;
   }
 }

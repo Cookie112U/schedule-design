@@ -73,15 +73,28 @@ window.ScheduleHolidayParticles = (() => {
       opacityRange: [0.48, 0.9]
     },
     "february-23": {
-      colors: ["#E08F1A", "#d7b15f", "#32281A"],
+      colors: ["#ffcd62", "#ffd369", "#6c9bc8", "#E08F1A"],
       shape: "star",
-      sizeRange: [5, 14],
-      speedRange: [0.45, 1.18],
-      driftRange: [-0.46, 0.46],
-      maxParticles: 58,
+      sizeRange: [5, 16],
+      speedRange: [0.45, 1.25],
+      driftRange: [-0.52, 0.52],
+      maxParticles: 72,
       direction: "down",
       twinkle: true,
-      opacityRange: [0.38, 0.8]
+      opacityRange: [0.42, 0.86],
+      glow: true
+    },
+    "victory-day": {
+      colors: ["#ffd66b", "#ffcd53", "#ff7c54", "#e87935", "#ffffff"],
+      shape: "spark",
+      sizeRange: [4, 14],
+      speedRange: [0.55, 2.2],
+      driftRange: [-0.86, 0.86],
+      maxParticles: 92,
+      direction: "up",
+      twinkle: true,
+      opacityRange: [0.48, 0.95],
+      glow: true
     }
   };
 

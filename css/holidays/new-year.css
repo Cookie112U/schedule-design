@@ -1,15 +1,21 @@
 .app[data-holiday="new-year"] {
+  --winter-snow: #ffffff;
+  --winter-snow-soft: #e4f5fb;
   background:
-    radial-gradient(circle at 0% 18%, rgba(196, 232, 255, 0.38), transparent 22rem),
-    radial-gradient(circle at 100% 82%, rgba(219, 242, 255, 0.34), transparent 24rem),
-    var(--bg);
+    radial-gradient(circle at 20% 12%, rgba(255, 255, 255, 0.671), transparent 28%),
+    radial-gradient(circle at 7% 15%, rgba(55, 73, 80, 0.28), transparent 23rem),
+    radial-gradient(circle at 92% 18%, rgba(92, 179, 192, 0.096), transparent 24rem),
+    linear-gradient(#bfe8f1 0%, #dfeceaa1 58%, #cfded763 100%);
 }
 
 .app[data-theme="dark"][data-holiday="new-year"] {
+  --winter-snow: rgba(226, 243, 255, 0.82);
+  --winter-snow-soft: rgba(226, 243, 255, 0.26);
   background:
-    radial-gradient(circle at 0% 18%, rgba(61, 100, 130, 0.22), transparent 24rem),
-    radial-gradient(circle at 100% 82%, rgba(50, 83, 106, 0.18), transparent 24rem),
-    var(--bg);
+    radial-gradient(circle at 10% 18%, rgba(94, 177, 226, 0.3), transparent 25rem),
+    radial-gradient(circle at 88% 17%, rgba(174, 225, 255, 0.2), transparent 24rem),
+    radial-gradient(circle at 88% 82%, rgba(96, 178, 226, 0.26), transparent 27rem),
+    linear-gradient(180deg, #162331 0%, #203241 54%, #172d2a 100%);
 }
 
 .app[data-holiday="new-year"] .garland {
@@ -17,7 +23,7 @@
   top: 4px;
   left: 0;
   right: 0;
-  height: 82px;
+  height: 62px;
   background-image:
     url("data:image/svg+xml,%3Csvg width='280' height='56' viewBox='0 0 280 56' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 22 C38 47 72 8 112 23 S186 47 224 21 S260 8 280 22' stroke='%23111111' stroke-width='3' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
   background-repeat: repeat-x;
@@ -41,8 +47,177 @@
   animation: lights-blink 2.4s ease-in-out infinite alternate;
 }
 
+.app[data-holiday="new-year"] .snowfall {
+  position: fixed;
+  right: clamp(118px, 17vw, 280px);
+  bottom: clamp(18px, 3.8vh, 50px);
+  z-index: 2;
+  display: block;
+  width: clamp(118px, 13vw, 206px);
+  height: clamp(162px, 18vw, 300px);
+}
+
+.app[data-holiday="new-year"] .snowfall::before {
+  content: "🎄";
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  font-size: clamp(118px, 13vw, 206px);
+  line-height: 1;
+  filter: drop-shadow(0 18px 20px rgba(26, 81, 52, 0.2));
+}
+
+.app[data-holiday="new-year"] .snowfall::after {
+  content: "";
+  display: none;
+}
+
+.app[data-theme="dark"][data-holiday="new-year"] .snowfall::after {
+  content: "🎁🎁";
+  position: absolute;
+  left: 55%;
+  bottom: clamp(1px, 1.5vw, 1px);
+  display: block;
+  width: max-content;
+  font-size: clamp(14px, 2vw, 27px);
+  line-height: 1;
+  white-space: nowrap;
+  filter: drop-shadow(0 10px 12px rgba(0, 0, 0, 0.28));
+}
+
+.app[data-holiday="new-year"] .flag-wave {
+  position: fixed;
+  left: -6vw;
+  right: -6vw;
+  bottom: -72px;
+  z-index: 1;
+  height: clamp(168px, 21vh, 238px);
+  background:
+    radial-gradient(ellipse at 9% 42%, var(--winter-snow) 0 17%, transparent 18%),
+    radial-gradient(ellipse at 28% 36%, var(--winter-snow-soft) 0 20%, transparent 21%),
+    radial-gradient(ellipse at 49% 41%, var(--winter-snow) 0 22%, transparent 23%),
+    radial-gradient(ellipse at 72% 36%, var(--winter-snow-soft) 0 20%, transparent 21%),
+    radial-gradient(ellipse at 92% 42%, var(--winter-snow) 0 18%, transparent 19%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0) 0 12%, rgba(202, 232, 242, 0.58) 13% 18%, var(--winter-snow) 27% 100%);
+  border-radius: 52% 48% 0 0 / 40% 36% 0 0;
+  box-shadow:
+    0 -18px 44px rgba(111, 177, 205, 0.22),
+    inset 0 18px 22px rgba(211, 239, 249, 0.34);
+}
+
+.app[data-theme="dark"][data-holiday="new-year"] .flag-wave {
+  box-shadow: 0 -18px 42px rgba(104, 187, 231, 0.12);
+}
+
+.app[data-holiday="new-year"] .flag-wave::before {
+  display: none;
+}
+
+.app[data-holiday="new-year"] .flag-wave::after {
+  display: none;
+}
+
+.app[data-holiday="new-year"] .holiday-ribbon {
+  position: fixed;
+  right: clamp(28px, 7vw, 112px);
+  bottom: clamp(20px, 4vh, 52px);
+  z-index: 2;
+  display: block;
+  width: clamp(124px, 14vw, 196px);
+  height: clamp(98px, 11vw, 156px);
+}
+
+.app[data-holiday="new-year"] .holiday-ribbon::before {
+  content: "🏠";
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  z-index: 2;
+  font-size: clamp(82px, 9.5vw, 128px);
+  line-height: 1;
+  filter: drop-shadow(0 16px 18px rgba(0, 0, 0, 0.18));
+}
+
+.app[data-holiday="new-year"] .holiday-ribbon::after {
+  content: "";
+  position: absolute;
+  right: 5%;
+  bottom: 1%;
+  z-index: 1;
+  width: 92%;
+  height: 70%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.42), rgba(209, 238, 246, 0.18) 50%, transparent 72%);
+  filter: blur(12px);
+}
+
+.app[data-theme="dark"][data-holiday="new-year"] .holiday-ribbon::before {
+  filter:
+    drop-shadow(0 0 12px rgba(255, 210, 114, 0.42))
+    drop-shadow(0 16px 18px rgba(0, 0, 0, 0.34));
+}
+
+.app[data-theme="dark"][data-holiday="new-year"] .holiday-ribbon::after {
+  background: radial-gradient(circle, rgba(255, 191, 83, 0.34), rgba(255, 191, 83, 0.13) 45%, transparent 72%);
+  filter: blur(16px);
+}
+
 @keyframes lights-blink {
   0%, 35% { opacity: 0.62; filter: blur(0.8px) drop-shadow(0 0 4px rgba(255, 255, 255, 0.3)); }
   58% { opacity: 1; filter: blur(0.2px) drop-shadow(0 0 13px rgba(244, 255, 0, 0.95)); }
   100% { opacity: 0.82; filter: blur(0.5px) drop-shadow(0 0 9px rgba(63, 140, 255, 0.75)); }
+}
+
+@media (max-width: 760px) {
+  .app[data-holiday="new-year"] .garland {
+    height: 50px;
+    background-size: 230px 46px;
+  }
+
+  .app[data-holiday="new-year"] .garland::after {
+    background-size: 230px 46px;
+    transform: scale(0.82);
+    transform-origin: left top;
+  }
+
+  .app[data-holiday="new-year"] .snowfall {
+    left: -30px;
+    right: auto;
+    bottom: -4px;
+    width: 126px;
+    height: 188px;
+    opacity: 0.76;
+  }
+
+  .app[data-holiday="new-year"] .snowfall::before {
+    font-size: 124px;
+  }
+
+  .app[data-theme="dark"][data-holiday="new-year"] .snowfall::after {
+    left: 50px;
+    bottom: 6px;
+    font-size: 18px;
+  }
+
+  .app[data-holiday="new-year"] .holiday-ribbon {
+    right: 10px;
+    bottom: 22px;
+    width: 104px;
+    height: 92px;
+    opacity: 0.72;
+  }
+
+  .app[data-holiday="new-year"] .holiday-ribbon::before {
+    font-size: 72px;
+  }
+
+  .app[data-holiday="new-year"] .flag-wave {
+    bottom: -82px;
+    height: 142px;
+  }
+
+  .app[data-holiday="new-year"] .flag-wave::before,
+  .app[data-holiday="new-year"] .flag-wave::after {
+    opacity: 0.24;
+  }
 }

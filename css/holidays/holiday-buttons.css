@@ -1,0 +1,20 @@
+.app[data-theme="light"][data-holiday="march-8"] .secondary-button,
+.app[data-theme="light"][data-holiday="february-23"] .secondary-button,
+.app[data-theme="light"][data-holiday="victory-day"] .secondary-button {
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.72);
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(10px);
+}
+
+.app[data-theme="light"][data-holiday="march-8"] .secondary-button {
+  background: rgba(202, 67, 136, 0.68);
+}
+
+.app[data-theme="light"][data-holiday="february-23"] .secondary-button {
+  background: rgba(16, 48, 82, 0.42);
+}
+
+.app[data-theme="light"][data-holiday="victory-day"] .secondary-button {
+  background: rgba(97, 18, 18, 0.42);
+}
