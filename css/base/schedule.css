@@ -1,9 +1,11 @@
 ﻿.result-panel {
+  --result-meta-font: 14.5px;
+  --result-main-font: 16px;
   grid-column: 1 / -1;
   width: 100%;
   margin-top: calc(var(--gap) * 1.4);
   padding: calc(var(--gap) * 1.7) var(--gap) calc(var(--gap) * 1.5);
-  background: var(--surface);
+  background: var(--calendar-soft);
   border-radius: 30px;
 }
 
@@ -11,10 +13,21 @@
   display: none;
 }
 
+.app[data-size="small"] .result-panel {
+  --result-meta-font: 14px;
+  --result-main-font: 14px;
+}
+
+.app[data-size="large"] .result-panel {
+  --result-meta-font: 15px;
+  --result-main-font: 18px;
+}
+
 .result-date {
   display: flex;
   align-items: center;
   gap: 18px;
+  min-width: 0;
   margin-bottom: calc(var(--gap) * 1.3);
 }
 
@@ -27,6 +40,15 @@
   line-height: 1.25;
 }
 
+.result-date .result-entity {
+  max-width: 45%;
+  margin-left: auto;
+  overflow-wrap: anywhere;
+  text-align: right;
+  font-size: calc(28px * var(--font-scale));
+  line-height: 1.05;
+}
+
 .result-date.compact strong {
   font-size: calc(44px * var(--font-scale));
 }
@@ -37,7 +59,9 @@
 }
 
 .lesson-card {
-  padding: 12px 10px;
+  display: grid;
+  gap: 10px;
+  padding: 10px;
   color: var(--ink);
   background: var(--lesson);
   border-radius: 8px;
@@ -46,71 +70,53 @@
 
 .lesson-row {
   display: grid;
-  grid-template-columns: auto 1fr auto;
-  gap: 10px;
+  grid-template-columns: auto auto minmax(0, 1fr);
+  gap: 12px;
   align-items: center;
-  margin-bottom: 14px;
+  min-width: 0;
 }
 
 .lesson-number {
-  min-width: 38px;
-  min-height: 25px;
+  min-width: 32px;
+  min-height: 20px;
   display: inline-grid;
   place-items: center;
-  color: #1f1f1f;
+  padding: 0 8px;
+  color: var(--accent-ink);
   background: var(--accent);
   border-radius: 999px;
+  font-size: var(--result-meta-font);
   font-weight: 700;
+  line-height: 1;
 }
 
 .lesson-time,
 .lesson-side {
-  font-size: 13px;
+  min-width: 0;
+  font-size: var(--result-meta-font);
+  line-height: 1.25;
+}
+
+.lesson-side {
+  justify-self: end;
+  max-width: min(260px, 38vw);
+  overflow-wrap: anywhere;
+  text-align: right;
 }
 
 .lesson-subject {
-  margin: 0 0 8px;
-  line-height: 1.35;
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-size: var(--result-main-font);
+  line-height: 1.28;
 }
 
 .lesson-room {
   padding-top: 8px;
-  border-top: 1px solid rgba(0, 0, 0, 0.12);
-  font-weight: 700;
-}
-
-.detailed .lesson-card {
-  display: grid;
-  grid-template-columns: 110px minmax(0, 1fr) 170px;
-  gap: 14px;
-  align-items: center;
-}
-
-.lesson-badge {
-  display: grid;
-  gap: 6px;
-}
-
-.lesson-badge span,
-.lesson-detail-label {
-  color: var(--muted);
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.lesson-badge strong {
-  font-size: 26px;
-}
-
-.lesson-detail-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-}
-
-.lesson-detail-value {
-  margin-top: 3px;
-  font-weight: 700;
+  border-top: 1px solid var(--lesson-divider);
+  font-size: var(--result-main-font);
+  line-height: 1.2;
+  font-weight: 600;
 }
 
 .modal-date-line {
@@ -123,85 +129,84 @@
   font-weight: 700;
 }
 
-.modal-schedule-table {
+.modal-schedule-list {
   display: grid;
+  gap: 8px;
   width: 100%;
-  overflow: hidden;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  font-size: 14px;
+  min-height: 0;
+  overflow-y: auto;
 }
 
-.modal-schedule-row {
+.modal-lesson-card {
   display: grid;
-  grid-template-columns: 56px 86px 74px minmax(150px, 2fr) minmax(112px, 1.1fr) 72px 78px;
+  gap: 12px;
   min-width: 0;
-  border-top: 1px solid var(--lesson-divider);
+  padding: 10px;
+  color: var(--ink);
+  background: var(--lesson);
+  border-radius: 8px;
+  border-bottom: 1px solid var(--lesson-divider);
 }
 
-.modal-schedule-row:first-child {
-  border-top: 0;
+.modal-lesson-top {
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
 }
 
-.modal-schedule-row > div {
+.modal-lesson-number {
+  min-width: 32px;
+  min-height: 20px;
+  display: inline-grid;
+  place-items: center;
+  padding: 0 8px;
+  color: var(--accent-ink);
+  background: var(--accent);
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.modal-lesson-time,
+.modal-lesson-side {
   min-width: 0;
-  padding: 10px 9px;
+  font-size: 14px;
+  line-height: 1.25;
+}
+
+.modal-lesson-side {
+  justify-self: end;
+  max-width: min(260px, 38vw);
   overflow-wrap: anywhere;
-  border-left: 1px solid var(--lesson-divider);
+  text-align: right;
+}
+
+.modal-lesson-bottom {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 16px;
+  min-width: 0;
+}
+
+.modal-lesson-subject,
+.modal-lesson-place {
+  font-size: 18px;
   line-height: 1.28;
 }
 
-.modal-schedule-row > div:first-child {
-  border-left: 0;
+.modal-lesson-subject {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
-.modal-schedule-head {
-  color: var(--muted);
-  background: var(--soft);
-  font-size: 12px;
-  font-weight: 700;
-  text-transform: uppercase;
-}
-
-@media (max-width: 980px) {
-  .modal-schedule-table {
-    gap: 10px;
-    border: 0;
-    border-radius: 0;
-    font-size: 14px;
-  }
-
-  .modal-schedule-head {
-    display: none;
-  }
-
-  .modal-schedule-row {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    overflow: hidden;
-    border: 1px solid var(--line);
-    border-radius: 12px;
-    background: var(--lesson);
-  }
-
-  .modal-schedule-row > div {
-    border-left: 0;
-    border-top: 1px solid var(--lesson-divider);
-  }
-
-  .modal-schedule-row > div:nth-child(1),
-  .modal-schedule-row > div:nth-child(2) {
-    border-top: 0;
-  }
-
-  .modal-schedule-row > div::before {
-    content: attr(data-label);
-    display: block;
-    margin-bottom: 4px;
-    color: var(--muted);
-    font-size: 11px;
-    font-weight: 700;
-    text-transform: uppercase;
-  }
+.modal-lesson-place {
+  justify-self: end;
+  white-space: nowrap;
+  text-align: right;
 }
 
 @media (max-width: 760px) {
@@ -211,72 +216,70 @@
     font-size: 14px;
   }
 
-  .modal-schedule-table {
-    gap: 0;
-    overflow: hidden;
-    border: 1px solid var(--line);
-    border-radius: 10px;
-    font-size: 10px;
+  .modal-schedule-list {
+    gap: 6px;
   }
 
-  .modal-schedule-head {
-    display: grid;
-    font-size: 8px;
-    text-transform: none;
+  .modal-lesson-card {
+    gap: 8px;
+    padding: 8px;
+    border-radius: 8px;
   }
 
-  .modal-schedule-row {
-    grid-template-columns: 34px 52px minmax(76px, 1.45fr) minmax(58px, 1fr) 40px 34px;
-    overflow: visible;
-    border: 0;
-    border-top: 1px solid var(--lesson-divider);
-    border-radius: 0;
-    background: transparent;
+  .modal-lesson-top {
+    gap: 7px;
   }
 
-  .modal-schedule-row:first-child {
-    border-top: 0;
+  .modal-lesson-number {
+    min-width: 26px;
+    min-height: 18px;
+    padding: 0 6px;
+    font-size: 12px;
+    font-weight: 700;
   }
 
-  .modal-schedule-row > div {
-    min-width: 0;
-    padding: 6px 4px;
-    border-top: 0;
-    border-left: 1px solid var(--lesson-divider);
-    line-height: 1.14;
-    overflow-wrap: anywhere;
+  .modal-lesson-time,
+  .modal-lesson-side {
+    font-size: 12px;
+    font-weight: 500;
   }
 
-  .modal-schedule-row > div:first-child {
-    border-left: 0;
+  .modal-lesson-side {
+    max-width: 34vw;
   }
 
-  .modal-schedule-row > div:nth-child(3) {
-    display: none;
+  .modal-lesson-bottom {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px;
   }
 
-  .modal-schedule-row > div::before {
-    content: none;
-    display: none;
-  }
-
-  .modal-schedule-row > div:nth-child(1),
-  .modal-schedule-row > div:nth-child(2) {
-    border-top: 0;
+  .modal-lesson-subject,
+  .modal-lesson-place {
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.22;
   }
 }
 
 @media (max-width: 380px) {
-  .modal-schedule-table {
-    font-size: 9px;
+  .modal-lesson-card {
+    padding: 7px;
   }
 
-  .modal-schedule-row {
-    grid-template-columns: 30px 48px minmax(68px, 1.45fr) minmax(52px, 1fr) 36px 30px;
+  .modal-lesson-number {
+    min-width: 24px;
+    min-height: 17px;
+    font-size: 11px;
   }
 
-  .modal-schedule-row > div {
-    padding: 5px 3px;
+  .modal-lesson-time,
+  .modal-lesson-side {
+    font-size: 11px;
+  }
+
+  .modal-lesson-subject,
+  .modal-lesson-place {
+    font-size: 12px;
   }
 }
 

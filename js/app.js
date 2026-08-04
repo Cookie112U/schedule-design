@@ -26,6 +26,7 @@ const resultPanel = document.querySelector("#resultPanel");
 const lessonList = document.querySelector("#lessonList");
 const resultDay = document.querySelector("#resultDay");
 const resultMonth = document.querySelector("#resultMonth");
+const resultEntity = document.querySelector("#resultEntity");
 const settingsButton = document.querySelector("#settingsButton");
 const roomsButton = document.querySelector("#roomsButton");
 const settingsModal = document.querySelector("#settingsModal");
@@ -379,74 +380,58 @@ function lessonsForSelection() {
 
 function renderLessons(target) {
   target.innerHTML = "";
+  target.className = "lesson-list";
   lessonsForSelection().forEach((lesson) => {
-    const sideLabel = state.mode === "student" ? "Педагог" : "Группа";
-    const sideValue = state.mode === "student" ? lesson.teacher || "Не назначен" : lesson.group;
+    const isLunch = lesson.discipline.toLowerCase() === "обед";
+    const sideValue = isLunch ? "" : state.mode === "student" ? lesson.teacher : lesson.group;
+    const placeValue = isLunch ? "" : `${lesson.building} ${lesson.room}`;
     const card = document.createElement("article");
     card.className = "lesson-card";
     card.innerHTML = `
-      <div class="lesson-badge">
-        <span>Урок</span>
-        <strong>${lesson.lesson}</strong>
-        <small>${lesson.time}</small>
+      <div class="lesson-row">
+        <span class="lesson-number">${lesson.lesson}</span>
+        <span class="lesson-time">${isLunch ? "" : lesson.time}</span>
+        <span class="lesson-side">${sideValue}</span>
       </div>
-      <div class="lesson-detail-grid">
-        <div>
-          <div class="lesson-detail-label">Пара</div>
-          <div class="lesson-detail-value">${lesson.pair}</div>
-        </div>
-        <div>
-          <div class="lesson-detail-label">Дисциплина</div>
-          <div class="lesson-detail-value">${lesson.discipline}</div>
-        </div>
-        <div>
-          <div class="lesson-detail-label">${sideLabel}</div>
-          <div class="lesson-detail-value">${sideValue}</div>
-        </div>
-        <div>
-          <div class="lesson-detail-label">Корпус</div>
-          <div class="lesson-detail-value">${lesson.building}</div>
-        </div>
-      </div>
-      <div>
-        <div class="lesson-detail-label">Кабинет</div>
-        <div class="lesson-detail-value">${lesson.room}</div>
-      </div>
+      <p class="lesson-subject">${lesson.discipline}</p>
+      ${placeValue ? `<div class="lesson-room">${placeValue}</div>` : ""}
     `;
     target.append(card);
   });
 }
 
 function renderModalLessons(target) {
-  const columns = ["№ Урока", "Время", "Пара", "Дисциплина", "Педагог", "Кабинет", "Корпус"];
   target.innerHTML = "";
-  target.className = "modal-schedule-table";
-
-  const header = document.createElement("div");
-  header.className = "modal-schedule-row modal-schedule-head";
-  header.innerHTML = columns.map((column) => `<div>${column}</div>`).join("");
-  target.append(header);
+  target.className = "modal-schedule-list";
 
   lessonsForSelection().forEach((lesson) => {
-    const fields = [
-      ["№ Урока", lesson.lesson],
-      ["Время", lesson.time],
-      ["Пара", lesson.pair],
-      ["Дисциплина", lesson.discipline],
-      ["Педагог", lesson.teacher || "Не назначен"],
-      ["Кабинет", lesson.room],
-      ["Корпус", lesson.building]
-    ];
-    const row = document.createElement("div");
-    row.className = "modal-schedule-row";
-    row.innerHTML = fields.map(([label, value]) => `<div data-label="${label}">${value}</div>`).join("");
-    target.append(row);
+    const isLunch = lesson.discipline.toLowerCase() === "обед";
+    const sideValue = isLunch ? "" : state.mode === "student" ? lesson.teacher : lesson.group;
+    const card = document.createElement("article");
+    card.className = "modal-lesson-card";
+    card.innerHTML = `
+      <div class="modal-lesson-top">
+        <span class="modal-lesson-number">${lesson.lesson}</span>
+        <span class="modal-lesson-time">${lesson.time}</span>
+        <span class="modal-lesson-side">${sideValue || ""}</span>
+      </div>
+      <div class="modal-lesson-bottom">
+        <div class="modal-lesson-subject">${lesson.discipline}</div>
+        <div class="modal-lesson-place">${lesson.building} ${lesson.room}</div>
+      </div>
+    `;
+    target.append(card);
   });
 }
 
 function setResultDate(dayTarget, monthTarget) {
   dayTarget.textContent = state.selectedDate.getDate();
   monthTarget.innerHTML = formatDateText(state.selectedDate);
+}
+
+function formatResultEntity() {
+  if (!state.selectedEntity) return "";
+  return state.mode === "student" ? state.selectedEntity.toUpperCase() : state.selectedEntity;
 }
 
 function showMessage(text) {
@@ -488,7 +473,9 @@ function showSchedule() {
   }
 
   if (state.output === "modal") {
-    modalTitle.textContent = state.selectedEntity;
+    modalTitle.textContent = state.mode === "student"
+      ? `Группа ${state.selectedEntity}`
+      : `Преподаватель ${state.selectedEntity}`;
     setModalDateLine(state.selectedDate);
     renderModalLessons(modalLessonList);
     scheduleModal.showModal();
@@ -496,6 +483,7 @@ function showSchedule() {
   }
 
   setResultDate(resultDay, resultMonth);
+  resultEntity.textContent = formatResultEntity();
   renderLessons(lessonList);
   resultPanel.classList.remove("hidden");
   resultPanel.scrollIntoView({ behavior: "smooth", block: "start" });
