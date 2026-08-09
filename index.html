@@ -108,7 +108,7 @@
           </div>
 
           <button class="primary-button" type="button" id="showSchedule">Показать расписание</button>
-          <button class="secondary-button" type="button">Скачать таблицу ХДЧЫ</button>
+          <button class="secondary-button" type="button">Скачать таблицу</button>
         </section>
 
         <section class="result-panel hidden" id="resultPanel" aria-live="polite">
@@ -181,18 +181,12 @@
           <button class="close-button" type="button" data-close="roomsModal" aria-label="Закрыть">×</button>
         </div>
 
-        <div class="segmented building-toggle">
-          <button type="button" class="setting-pill active" data-building="1">1 корпус</button>
-          <button type="button" class="setting-pill" data-building="2">2 корпус</button>
-        </div>
+        <div class="segmented building-toggle" id="buildingToggle"></div>
 
         <label class="pair-filter">
           <span>Пара</span>
           <select id="pairSelect">
-            <option value="1">1 пара (1-2 урок)</option>
-            <option value="2">2 пара (3-4 урок)</option>
-            <option value="3">5 урок</option>
-            <option value="4">3 пара (6-7 урок)</option>
+            <option value="">Загрузка пар...</option>
           </select>
         </label>
 
@@ -231,6 +225,7 @@
       </section>
     </dialog>
 
+    <script src="js/modules/config.js"></script>
     <script src="js/modules/data.js"></script>
     <script src="js/modules/storage.js"></script>
     <script src="js/modules/holiday.js"></script>

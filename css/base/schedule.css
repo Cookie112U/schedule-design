@@ -58,6 +58,19 @@
   gap: 8px;
 }
 
+.inline-state {
+  padding: 14px;
+  color: var(--muted);
+  background: var(--lesson);
+  border: 1px solid var(--lesson-divider);
+  border-radius: 8px;
+  font-weight: 700;
+}
+
+.room-cards .inline-state {
+  grid-column: 1 / -1;
+}
+
 .lesson-card {
   display: grid;
   gap: 10px;
