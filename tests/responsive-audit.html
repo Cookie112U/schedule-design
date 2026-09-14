@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Responsive Audit</title>
+    <style>
+      body { margin: 0; padding: 18px; font-family: Arial, sans-serif; background: #f4f4f4; color: #222; }
+      h1 { margin: 0 0 14px; font-size: 22px; }
+      .summary { margin-bottom: 14px; font-weight: 700; }
+      .grid { display: grid; gap: 18px; }
+      .case { display: grid; gap: 8px; padding: 12px; background: white; border: 1px solid #d7d7d7; border-radius: 10px; }
+      .case.ok { border-color: #30a46c; }
+      .case.fail { border-color: #e5484d; }
+      .case-head { display: flex; justify-content: space-between; gap: 12px; font-weight: 700; }
+      .case-log { margin: 0; white-space: pre-wrap; font: 12px/1.4 Consolas, monospace; }
+      iframe { height: 760px; max-width: 100%; border: 1px solid #bbb; border-radius: 8px; background: white; }
+    </style>
+  </head>
+  <body>
+    <h1>Responsive Audit</h1>
+    <div class="summary" id="summary">Запуск...</div>
+    <div class="grid" id="grid"></div>
+
+    <script>
+      const storageKey = "nttek-schedule-ui-v2";
+      const widths = [320, 360, 375, 390, 414, 480, 520, 640, 700, 768, 820, 900, 980, 981, 1024, 1100, 1180, 1181, 1280, 1366, 1440];
+      const sizes = ["small", "medium", "large"];
+      const themes = ["light", "dark"];
+      const grid = document.querySelector("#grid");
+      const summary = document.querySelector("#summary");
+      const cases = [];
+
+      for (const width of widths) {
+        for (const size of sizes) {
+          for (const theme of themes) cases.push({ width, size, theme });
+        }
+      }
+
+      function waitFrame(iframe) {
+        return new Promise((resolve) => {
+          iframe.addEventListener("load", () => {
+            setTimeout(resolve, 180);
+          }, { once: true });
+        });
+      }
+
+      function rectOverflow(rect, viewportWidth) {
+        return rect.left < -1 || rect.right > viewportWidth + 1;
+      }
+
+      function checkCase(doc, viewportWidth) {
+        const issues = [];
+        const html = doc.documentElement;
+        const body = doc.body;
+        const horizontal = Math.max(html.scrollWidth, body.scrollWidth) - viewportWidth;
+        if (horizontal > 1) issues.push(`horizontal scroll: +${horizontal}px`);
+
+        const selectors = [
+          ".app-header", ".layout", ".calendar-panel", ".calendar-wrap", ".search-panel",
+          ".mode-toggle", ".select-trigger", ".primary-button", ".secondary-button",
+          ".result-panel", ".lesson-card", ".modal-card", ".room-cards"
+        ];
+
+        selectors.forEach((selector) => {
+          doc.querySelectorAll(selector).forEach((element, index) => {
+            const rect = element.getBoundingClientRect();
+            if (rect.width && rectOverflow(rect, viewportWidth)) {
+              issues.push(`${selector}[${index}] outside viewport: left ${rect.left.toFixed(1)}, right ${rect.right.toFixed(1)}`);
+            }
+            if (element.scrollWidth - element.clientWidth > 1) {
+              issues.push(`${selector}[${index}] internal overflow: +${element.scrollWidth - element.clientWidth}px`);
+            }
+          });
+        });
+
+        doc.querySelectorAll(".day-cell").forEach((cell, index) => {
+          const rect = cell.getBoundingClientRect();
+          if (Math.abs(rect.width - rect.height) > 1.5) issues.push(`day-cell[${index}] not square: ${rect.width.toFixed(1)}x${rect.height.toFixed(1)}`);
+          const strong = cell.querySelector("strong");
+          if (strong) {
+            const inner = strong.getBoundingClientRect();
+            if (rect.width && (inner.left < rect.left || inner.right > rect.right || inner.top < rect.top || inner.bottom > rect.bottom)) {
+              issues.push(`day-cell[${index}] number outside cell`);
+            }
+          }
+        });
+
+        doc.querySelectorAll(".lesson-time, .modal-lesson-time").forEach((element, index) => {
+          if (element.scrollWidth - element.clientWidth > 1) issues.push(`time[${index}] overflow: ${element.textContent}`);
+        });
+
+        return issues;
+      }
+
+      function injectStressContent(doc) {
+        const resultPanel = doc.querySelector("#resultPanel");
+        const resultDay = doc.querySelector("#resultDay");
+        const resultMonth = doc.querySelector("#resultMonth");
+        const resultEntity = doc.querySelector("#resultEntity");
+        const lessonList = doc.querySelector("#lessonList");
+        const modal = doc.querySelector("#scheduleModal");
+        const modalTitle = doc.querySelector("#modalTitle");
+        const modalDateLine = doc.querySelector("#modalDateLine");
+        const modalLessonList = doc.querySelector("#modalLessonList");
+        const roomsModal = doc.querySelector("#roomsModal");
+        const roomCards = doc.querySelector("#roomCards");
+
+        const lessons = ["1-2", "3", "4", "5", "6-7"].map((number, index) => ({
+          number,
+          time: index === 3 ? "" : "08:30-10:00",
+          side: index === 3 ? "" : "Иванова-Смирнова Анастасия Петровна",
+          subject: index === 3 ? "Обед" : "Техническое оснащение организаций питания и контроль качества",
+          place: index === 3 ? "" : "1 корпус 333 кабинет"
+        }));
+
+        if (resultPanel && lessonList) {
+          resultPanel.classList.remove("hidden");
+          if (resultDay) resultDay.textContent = "18";
+          if (resultMonth) resultMonth.innerHTML = "сентября<br>среда";
+          if (resultEntity) resultEntity.textContent = "ХДЧЫ-24";
+          lessonList.innerHTML = lessons.map((lesson) => `
+            <article class="lesson-card">
+              <div class="lesson-row">
+                <span class="lesson-number">${lesson.number}</span>
+                <span class="lesson-time">${lesson.time}</span>
+                <span class="lesson-side">${lesson.side}</span>
+              </div>
+              <p class="lesson-subject">${lesson.subject}</p>
+              ${lesson.place ? `<div class="lesson-room">${lesson.place}</div>` : ""}
+            </article>
+          `).join("");
+        }
+
+        if (modal && modalLessonList) {
+          modal.setAttribute("open", "");
+          if (modalTitle) modalTitle.textContent = "Группа ХДЧЫ-24";
+          if (modalDateLine) modalDateLine.innerHTML = "<span>18 сентября</span><span>Среда</span>";
+          modalLessonList.innerHTML = lessons.map((lesson) => `
+            <article class="modal-lesson-card">
+              <div class="modal-lesson-top">
+                <span class="modal-lesson-number">${lesson.number}</span>
+                <span class="modal-lesson-time">${lesson.time}</span>
+                <span class="modal-lesson-side">${lesson.side}</span>
+              </div>
+              <div class="modal-lesson-bottom">
+                <div class="modal-lesson-subject">${lesson.subject}</div>
+                <div class="modal-lesson-place">${lesson.place}</div>
+              </div>
+            </article>
+          `).join("");
+        }
+
+        if (roomsModal && roomCards) {
+          roomsModal.setAttribute("open", "");
+          roomCards.innerHTML = Array.from({ length: 18 }, (_, index) => `
+            <button class="room-card${index % 3 === 0 ? " busy" : ""}" type="button">
+              <div class="room-title"><strong>${100 + index} кабинет</strong><span class="status-dot"></span></div>
+              <div class="room-status">${index % 3 === 0 ? "Занята" : "Свободна"}</div>
+            </button>
+          `).join("");
+        }
+      }
+
+      async function runOne(testCase) {
+        localStorage.setItem(storageKey, JSON.stringify({
+          theme: testCase.theme,
+          size: testCase.size,
+          output: "bottom",
+          holidayMode: "none"
+        }));
+
+        const box = document.createElement("section");
+        box.className = "case";
+        box.innerHTML = `<div class="case-head"><span>${testCase.width}px / ${testCase.size} / ${testCase.theme}</span><span>...</span></div><pre class="case-log"></pre>`;
+        const iframe = document.createElement("iframe");
+        iframe.width = testCase.width;
+        iframe.src = `../index.html?audit=1#audit-${testCase.width}-${testCase.size}-${testCase.theme}`;
+        box.append(iframe);
+        grid.append(box);
+
+        await waitFrame(iframe);
+        const doc = iframe.contentDocument;
+        const app = doc.querySelector(".app");
+        if (app) {
+          app.dataset.size = testCase.size;
+          app.dataset.theme = testCase.theme;
+          doc.documentElement.dataset.size = testCase.size;
+          doc.documentElement.dataset.theme = testCase.theme;
+        }
+
+        injectStressContent(doc);
+        await new Promise((resolve) => iframe.contentWindow.requestAnimationFrame(() => resolve()));
+        const issues = checkCase(doc, testCase.width);
+        box.classList.add(issues.length ? "fail" : "ok");
+        box.querySelector(".case-head span:last-child").textContent = issues.length ? `FAIL ${issues.length}` : "OK";
+        box.querySelector(".case-log").textContent = issues.join("\n");
+        return issues.length;
+      }
+
+      (async () => {
+        let failed = 0;
+        for (const testCase of cases) failed += await runOne(testCase);
+        summary.textContent = failed ? `Есть проблемы: ${failed}` : "Все проверки без переполнений";
+      })();
+    </script>
+  </body>
+</html>

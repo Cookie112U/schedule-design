@@ -1,4 +1,4 @@
-﻿.mode-toggle,
+.mode-toggle,
 .segmented {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -10,11 +10,17 @@
 
 .mode-button,
 .setting-pill {
+  min-width: 0;
   min-height: calc(var(--control) * 0.88);
-  padding: 0 calc(var(--gap) * 0.75);
+  padding: 0 clamp(8px, calc(var(--gap) * 0.55), 16px);
+  overflow: hidden;
   color: var(--ink);
   background: transparent;
   border: 0;
+  font-size: clamp(14px, calc(15px * var(--font-scale)), 18px);
+  line-height: 1.15;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .mode-button.active,
@@ -30,12 +36,13 @@
 
 .select-trigger {
   width: 100%;
+  min-width: 0;
   min-height: calc(var(--control) * 0.88);
   display: grid;
-  grid-template-columns: 28px minmax(0, 1fr) 28px 24px;
+  grid-template-columns: 24px minmax(0, 1fr) 24px 20px;
   align-items: center;
-  gap: 10px;
-  padding: 0 calc(var(--gap) * 0.8);
+  gap: 8px;
+  padding: 0 clamp(10px, calc(var(--gap) * 0.65), 18px);
   color: var(--ink);
   background: var(--surface);
   border: 1px solid var(--line);
@@ -144,10 +151,14 @@
 .primary-button,
 .secondary-button {
   width: 100%;
+  min-width: 0;
   min-height: var(--control);
   margin-top: var(--gap);
+  padding: 0 clamp(10px, calc(var(--gap) * 0.7), 18px);
   border-radius: var(--radius);
   font-weight: 700;
+  line-height: 1.18;
+  overflow-wrap: anywhere;
 }
 
 .primary-button {

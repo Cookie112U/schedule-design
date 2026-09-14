@@ -214,3 +214,30 @@
     font-size: clamp(88px, 28vw, 170px);
   }
 }
+
+@media (max-width: 760px) {
+  .app[data-theme="dark"][data-holiday="february-23"] .holiday-number {
+    --holiday-number-accent: #ffe19a;
+    --holiday-number-mid: #9fcbff;
+    --holiday-number-deep: #5fa9ff;
+    --holiday-number-ring: rgba(255, 225, 154, 0.38);
+    --holiday-number-soft: rgba(159, 203, 255, 0.3);
+    opacity: 0.9;
+  }
+
+  .app[data-theme="dark"][data-holiday="victory-day"] .holiday-number {
+    --holiday-number-accent: #ffe38b;
+    --holiday-number-mid: #ff9d5f;
+    --holiday-number-deep: #ff4b42;
+    --holiday-number-ring: rgba(255, 227, 139, 0.42);
+    --holiday-number-soft: rgba(255, 157, 95, 0.32);
+    opacity: 0.9;
+  }
+
+  .app[data-theme="dark"][data-holiday="february-23"] .holiday-number::before,
+  .app[data-theme="dark"][data-holiday="victory-day"] .holiday-number::before {
+    filter:
+      drop-shadow(0 0 20px color-mix(in srgb, var(--holiday-number-accent) 72%, transparent))
+      drop-shadow(0 16px 22px rgba(0, 0, 0, 0.38));
+  }
+}

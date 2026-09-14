@@ -1,0 +1,52 @@
+# Dependencies
+node_modules/
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Local servers and logs
+*.log
+*.out.log
+*.err.log
+dev-server-*.log
+dev-server-*.out.log
+dev-server-*.err.log
+
+# Editor and IDE
+.vscode/
+.idea/
+*.code-workspace
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Environment and local config
+.env
+.env.*
+!.env.example
+*.local
+
+# Caches and generated folders
+.cache/
+.parcel-cache/
+.turbo/
+.vite/
+dist/
+build/
+coverage/
+tmp/
+temp/
+
+# Local assistant/tooling state
+.agents/
+.codex/
+
+# Browser/debug artifacts
+*.har
+*.trace
+*.heapsnapshot
+screenshots/
+playwright-report/
+test-results/

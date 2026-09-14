@@ -19,14 +19,25 @@ function autoHoliday(today) {
   if (inRange(today, 2, 6, 2, 7)) return "march-8";
   if (inRange(today, 4, 7, 4, 9)) return "victory-day";
   if (inRange(today, 5, 10, 5, 13)) return "russia-day";
-  if (inRange(today, 7, 6, 7, 10)) return "tagil-day";
   if (inRange(today, 8, 1, 8, 5)) return "september";
   if (inAbsoluteRange(today, 2027, 3, 30, 2027, 4, 3)) return "easter";
   return "none";
 }
 
 function activeHoliday(mode, today) {
-  return mode === "auto" ? autoHoliday(today) : mode;
+  const supportedModes = new Set([
+    "auto",
+    "none",
+    "new-year",
+    "russia-day",
+    "easter",
+    "september",
+    "march-8",
+    "february-23",
+    "victory-day"
+  ]);
+  const safeMode = supportedModes.has(mode) ? mode : "auto";
+  return safeMode === "auto" ? autoHoliday(today) : safeMode;
 }
 
 return {

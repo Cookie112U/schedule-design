@@ -84,9 +84,10 @@ window.ScheduleApiClient = (() => {
   }
 
   function buildUrl(path, query = {}, base = getBaseUrl()) {
-    const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+    const rawPath = String(path || "");
+    const normalizedPath = isAbsoluteUrl(rawPath) ? rawPath : rawPath.startsWith("/") ? rawPath : `/${rawPath}`;
     const normalizedBase = normalizeBaseUrl(base);
-    const href = normalizedBase ? `${normalizedBase}${normalizedPath}` : normalizedPath;
+    const href = isAbsoluteUrl(normalizedPath) ? normalizedPath : normalizedBase ? `${normalizedBase}${normalizedPath}` : normalizedPath;
     const baseHref = window.location.origin === "null" ? window.location.href : window.location.origin;
     const url = isAbsoluteUrl(href) ? new URL(href) : new URL(href, baseHref);
 
@@ -108,42 +109,33 @@ window.ScheduleApiClient = (() => {
     }
   }
 
-  function wrapNetworkError(error) {
+  function wrapNetworkError(error, targetUrl = getLocalApiOrigin()) {
     if (error?.code) return error;
 
-    if (isFileFrontend()) {
-      return createClientError(
-        `Страница открыта как файл, поэтому origin равен null. Браузер не даст прочитать API ${getLocalApiOrigin()}, пока backend не разрешит origin null. Откройте проект через Live Server или разместите сайт на сервере.`,
-        "NETWORK_ERROR",
-        error
-      );
-    }
-
-    if (isLocalFrontend()) {
-      return createClientError(
-        `Браузер не разрешил прочитать API ${getLocalApiOrigin()} с origin ${window.location.origin}. Добавьте именно этот origin в CORS backend и перезапустите backend.`,
-        "NETWORK_ERROR",
-        error
-      );
-    }
-
-    return createClientError(
-      "Не удалось подключиться к API. Проверьте адрес сервера и CORS-настройки.",
-      "NETWORK_ERROR",
-      error
-    );
+    const reason = typeof navigator !== "undefined" && navigator.onLine === false
+      ? "offline"
+      : isFileFrontend()
+        ? "file-origin"
+        : isLocalFrontend()
+          ? "local-origin"
+          : "network";
+    const wrapped = createClientError("Не удалось получить данные расписания", "NETWORK_ERROR", error);
+    wrapped.reason = reason;
+    wrapped.url = targetUrl;
+    return wrapped;
   }
 
   async function request(path, query) {
     const base = getBaseUrl();
+    const url = buildUrl(path, query, base);
 
     let response;
     try {
-      response = await fetch(buildUrl(path, query, base), {
+      response = await fetch(url, {
         headers: { Accept: "application/json" }
       });
     } catch (error) {
-      throw wrapNetworkError(error);
+      throw wrapNetworkError(error, url);
     }
 
     if (!response.ok) {

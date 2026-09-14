@@ -1,4 +1,4 @@
-﻿.app-header {
+.app-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -44,10 +44,15 @@
 
 .layout {
   display: grid;
-  grid-template-columns: minmax(0, 60%) minmax(300px, 30%);
+  grid-template-columns: minmax(0, 60%) minmax(0, 30%);
   gap: 10%;
   align-items: start;
   font-size: calc(16px * var(--font-scale));
+}
+
+.calendar-panel {
+  width: 100%;
+  min-width: 0;
 }
 
 .calendar-toolbar {
@@ -111,16 +116,22 @@
 
 .calendar-wrap {
   position: relative;
-  width: fit-content;
+  width: min(100%, calc((var(--tile) * 7) + 12px + (var(--month-arrow-size) * 2) + (var(--month-arrow-gap) * 2)));
   max-width: 100%;
+  display: grid;
+  grid-template-columns: var(--month-arrow-size) minmax(0, 1fr) var(--month-arrow-size);
+  align-items: center;
+  gap: var(--month-arrow-gap);
+}
+
+.calendar-wrap > div {
+  min-width: 0;
+  width: 100%;
 }
 
 .month-arrow {
-  position: absolute;
-  top: calc(50% + 18px);
-  transform: translateY(-50%);
-  width: 42px;
-  height: 42px;
+  width: var(--month-arrow-size);
+  height: var(--month-arrow-size);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -149,17 +160,19 @@
 }
 
 .month-arrow-left {
-  left: -46px;
+  justify-self: start;
 }
 
 .month-arrow-right {
-  right: -46px;
+  justify-self: end;
 }
 
 .week-strip,
 .calendar-grid {
+  width: 100%;
+  min-width: 0;
   display: grid;
-  grid-template-columns: repeat(7, var(--tile));
+  grid-template-columns: repeat(7, minmax(0, 1fr));
 }
 
 .week-strip {
@@ -181,16 +194,21 @@
 
 .calendar-grid {
   gap: 2px;
+  grid-template-rows: repeat(6, minmax(0, 1fr));
 }
 
 .day-cell {
   position: relative;
-  width: var(--tile);
-  height: var(--tile);
-  padding: calc(var(--gap) * 0.75) calc(var(--gap) * 0.7);
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1;
+  min-width: 0;
+  min-height: 0;
+  padding: clamp(6px, calc(var(--gap) * 0.6), 18px);
   display: grid;
   align-content: center;
   justify-items: center;
+  overflow: hidden;
   color: var(--ink);
   background: var(--soft);
   border: 0;
@@ -237,14 +255,21 @@
   margin-bottom: 0;
   font-size: calc(22px * var(--font-scale));
   font-weight: 400;
+  line-height: 1;
 }
 
 .day-cell span {
+  max-width: 100%;
   margin-top: 6px;
-  font-size: calc(16px * var(--font-scale));
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: clamp(11px, calc(13px * var(--font-scale)), 16px);
+  line-height: 1.05;
 }
 
 .search-panel {
+  min-width: 0;
   padding-top: calc(var(--control) * 2);
 }
 

@@ -6,9 +6,15 @@ const {
   weekdaysFull
 } = window.ScheduleData;
 const { activeHoliday } = window.ScheduleHoliday;
-const { readSavedState, writeSavedState } = window.ScheduleStorage;
+const {
+  readSavedState,
+  readRoomCache,
+  writeRoomCache,
+  writeSavedState
+} = window.ScheduleStorage;
 const scheduleService = window.ScheduleService;
 const scheduleTransform = window.ScheduleTransform;
+const errorCatalog = window.ScheduleErrorCatalog;
 const { start: startHolidayParticles } = window.ScheduleHolidayParticles;
 
 const app = document.querySelector(".app");
@@ -20,6 +26,7 @@ const monthMenu = document.querySelector("#monthMenu");
 const mobileMonthTitle = document.querySelector("#mobileMonthTitle");
 const modeButtons = document.querySelectorAll(".mode-button");
 const showScheduleButton = document.querySelector("#showSchedule");
+const downloadScheduleButton = document.querySelector("#downloadSchedule");
 const resultPanel = document.querySelector("#resultPanel");
 const lessonList = document.querySelector("#lessonList");
 const resultDay = document.querySelector("#resultDay");
@@ -59,6 +66,7 @@ const today = new Date();
 today.setHours(0, 0, 0, 0);
 
 const maxToasts = 5;
+const maxFavorites = 18;
 const toastCooldownMs = 1200;
 const toastLastShown = new Map();
 const apiState = {
@@ -72,12 +80,14 @@ const apiState = {
   timeSlots: [],
   scheduleDates: new Set(),
   dictionaries: null,
+  scheduleUrl: "",
   catalogsLoaded: false
 };
 
 const defaults = {
   mode: "student",
   selectedEntity: "",
+  lastSelectedByMode: { student: "", teacher: "" },
   selectedDate: toDateKey(today),
   visibleDate: toDateKey(new Date(today.getFullYear(), today.getMonth(), 1)),
   theme: "light",
@@ -96,16 +106,39 @@ const state = {
   ...saved,
   selectedDate: parseDate(saved.selectedDate || defaults.selectedDate),
   visibleDate: parseDate(saved.visibleDate || defaults.visibleDate),
-  favorites: Array.isArray(saved.favorites) ? saved.favorites : []
+  favorites: Array.isArray(saved.favorites) ? saved.favorites : [],
+  lastSelectedByMode: {
+    ...defaults.lastSelectedByMode,
+    ...(saved.lastSelectedByMode && typeof saved.lastSelectedByMode === "object" ? saved.lastSelectedByMode : {})
+  }
 };
+
+if (state.selectedEntity && !state.lastSelectedByMode[state.mode]) {
+  state.lastSelectedByMode[state.mode] = state.selectedEntity;
+}
+
+const roomCache = typeof readRoomCache === "function" ? readRoomCache() : {};
+const roomCacheTtlMs = 6 * 60 * 60 * 1000;
+const maxRoomCacheDates = 20;
+
+const isAuditMode = new URLSearchParams(window.location.search).has("audit");
+const availableHolidayModes = new Set(Array.from(document.querySelectorAll("[data-holiday]")).map((button) => button.dataset.holiday));
+if (!availableHolidayModes.has(state.holidayMode)) {
+  state.holidayMode = defaults.holidayMode;
+}
 
 let scheduleWatcherErrorShown = false;
 let stopScheduleWatcher = null;
+let catalogLoadRequestId = 0;
+let roomsLoadRequestId = 0;
+let catalogRefreshTimer = 0;
+let roomsRefreshTimer = 0;
 
 function saveState() {
   writeSavedState({
     mode: state.mode,
     selectedEntity: state.selectedEntity,
+    lastSelectedByMode: state.lastSelectedByMode,
     selectedDate: toDateKey(state.selectedDate),
     visibleDate: toDateKey(state.visibleDate),
     theme: state.theme,
@@ -191,6 +224,14 @@ function accentInkFor(color) {
 }
 
 function apiErrorText(error, fallback = "Не удалось загрузить данные") {
+  if (error?.code === "SCHEDULE_DATE_NOT_FOUND") {
+    return "На данную дату нет расписания";
+  }
+
+  if (errorCatalog?.userMessage) {
+    return errorCatalog.userMessage(error, fallback);
+  }
+
   if (error?.code === "NETWORK_ERROR") {
     return error.message;
   }
@@ -202,7 +243,9 @@ function apiErrorText(error, fallback = "Не удалось загрузить 
   }
 
   if (error?.status === 404) {
-    return `${fallback}: эндпоинт не найден`;
+    return error?.message && !/not found/i.test(error.message)
+      ? error.message
+      : `${fallback}: эндпоинт не найден`;
   }
 
   return error?.message ? `${fallback}: ${error.message}` : fallback;
@@ -213,6 +256,62 @@ function createElement(tag, className, text) {
   if (className) element.className = className;
   if (text !== undefined && text !== null) element.textContent = text;
   return element;
+}
+
+function roomCacheScope() {
+  return window.ScheduleRequest?.apiMode?.() || "api";
+}
+
+function roomCacheKey(dateKey) {
+  return `${roomCacheScope()}:${dateKey}`;
+}
+
+function persistRoomCache() {
+  if (typeof writeRoomCache === "function") {
+    writeRoomCache(roomCache);
+  }
+}
+
+function pruneRoomCache() {
+  const entries = Object.entries(roomCache)
+    .sort(([, first], [, second]) => Number(second?.savedAt || 0) - Number(first?.savedAt || 0));
+  entries.slice(maxRoomCacheDates).forEach(([key]) => delete roomCache[key]);
+}
+
+function readCachedRooms(dateKey) {
+  const key = roomCacheKey(dateKey);
+  const cached = roomCache[key];
+  if (!cached || !Array.isArray(cached.rooms)) return null;
+
+  if (Date.now() - Number(cached.savedAt || 0) > roomCacheTtlMs) {
+    delete roomCache[key];
+    persistRoomCache();
+    return null;
+  }
+
+  return cached.rooms;
+}
+
+function writeCachedRooms(dateKey, rooms) {
+  roomCache[roomCacheKey(dateKey)] = {
+    savedAt: Date.now(),
+    rooms
+  };
+  pruneRoomCache();
+  persistRoomCache();
+}
+
+function setScheduleUrl(url = "") {
+  apiState.scheduleUrl = String(url || "").trim();
+  updateDownloadButton();
+}
+
+function updateDownloadButton() {
+  if (!downloadScheduleButton) return;
+  downloadScheduleButton.disabled = !apiState.scheduleUrl;
+  downloadScheduleButton.title = apiState.scheduleUrl
+    ? "Скачать таблицу расписания"
+    : "На выбранную дату файл расписания не найден";
 }
 
 function renderInlineStatus(target, text) {
@@ -228,11 +327,28 @@ function isFavorite(entity, mode = state.mode) {
   return state.favorites.includes(favoriteKey(entity, mode));
 }
 
+function chooseAvailableEntity(entities) {
+  const pinned = state.lastSelectedByMode?.[state.mode] || "";
+  if (pinned && entities.includes(pinned)) return pinned;
+
+  const favorite = entities.find((entity) => isFavorite(entity));
+  if (favorite) return favorite;
+
+  return state.selectedEntity && entities.includes(state.selectedEntity) ? state.selectedEntity : "";
+}
+
 function toggleFavorite(entity, mode = state.mode) {
   const key = favoriteKey(entity, mode);
-  state.favorites = isFavorite(entity, mode)
-    ? state.favorites.filter((item) => item !== key)
-    : [key, ...state.favorites];
+  if (isFavorite(entity, mode)) {
+    state.favorites = state.favorites.filter((item) => item !== key);
+  } else {
+    const sameMode = state.favorites
+      .filter((item) => item !== key && item.startsWith(`${mode}:`))
+      .slice(0, maxFavorites - 1);
+    const otherMode = state.favorites.filter((item) => !item.startsWith(`${mode}:`));
+    state.favorites = [key, ...sameMode, ...otherMode];
+  }
+
   saveState();
   updateTrigger();
   renderEntityOptions();
@@ -272,6 +388,7 @@ function addOption(entity) {
   button.append(star, createElement("strong", "", entity));
   button.addEventListener("click", () => {
     state.selectedEntity = entity;
+    state.lastSelectedByMode[state.mode] = entity;
     hideResult();
     saveState();
     updateTrigger();
@@ -294,7 +411,9 @@ function renderEntityOptions() {
   }
 
   const entities = getEntities();
-  const favorites = entities.filter((entity) => isFavorite(entity) && entity.toLowerCase().includes(query));
+  const favorites = entities
+    .filter((entity) => isFavorite(entity) && entity.toLowerCase().includes(query))
+    .slice(0, maxFavorites);
 
   if (favorites.length) {
     addGroupTitle("Избранное");
@@ -305,13 +424,13 @@ function renderEntityOptions() {
     Object.entries(apiState.groupsByBuilding).forEach(([building, list]) => {
       const filtered = [...list]
         .sort(sortRu)
-        .filter((entity) => entity.toLowerCase().includes(query) && !favorites.includes(entity));
+        .filter((entity) => entity.toLowerCase().includes(query));
       if (!filtered.length) return;
       addGroupTitle(building);
       filtered.forEach(addOption);
     });
   } else {
-    const filtered = apiState.teachers.filter((entity) => entity.toLowerCase().includes(query) && !favorites.includes(entity));
+    const filtered = apiState.teachers.filter((entity) => entity.toLowerCase().includes(query));
     if (filtered.length) {
       addGroupTitle("Преподаватели");
       filtered.forEach(addOption);
@@ -337,24 +456,32 @@ function selectDate(date) {
   saveState();
   renderCalendar();
   refreshRoomsIfOpen();
+  refreshCatalogsForDate();
 }
 
 function resetTimeSlotsForDate() {
   apiState.timeSlots = [];
   state.pair = "";
+  setScheduleUrl("");
   renderPairOptions();
 }
 
-function refreshRoomsIfOpen() {
-  if (roomsModal.open) {
-    renderRooms({ force: true });
-  }
+function refreshRoomsIfOpen(force = false) {
+  if (!roomsModal.open) return;
+  window.clearTimeout(roomsRefreshTimer);
+  roomsRefreshTimer = window.setTimeout(() => renderRooms({ force }), 60);
+}
+
+function refreshCatalogsForDate(force = false) {
+  if (isAuditMode) return;
+  window.clearTimeout(catalogRefreshTimer);
+  catalogRefreshTimer = window.setTimeout(() => loadCatalogs({ force }), 80);
 }
 
 function renderCalendar() {
   const year = state.visibleDate.getFullYear();
   const month = state.visibleDate.getMonth();
-  monthLabel.textContent = months[month];
+  monthLabel.textContent = `${months[month]} ${year}`;
   mobileMonthTitle.textContent = `${months[month]} ${year}`;
   renderMonthMenu();
 
@@ -422,6 +549,7 @@ function renderMonthMenu() {
       monthMenu.hidden = true;
       renderCalendar();
       refreshRoomsIfOpen();
+      refreshCatalogsForDate();
     });
     monthMenu.append(button);
   });
@@ -440,9 +568,61 @@ function lessonSideValue(lesson) {
   return state.mode === "student" ? lesson.teacher : lesson.group;
 }
 
+function splitBuildingLabel(value) {
+  const raw = String(value || "").trim();
+  const addressMatch = raw.match(/\(([^)]*)\)/);
+  const name = raw.replace(/\s*\([^)]*\)/g, "").trim();
+  const normalizedName = name
+    ? name.replace(/^корпус/i, "Корпус").replace(/^КОРПУС/i, "Корпус")
+    : "";
+
+  return {
+    name: normalizedName,
+    address: addressMatch?.[1]?.trim() || ""
+  };
+}
+
+function normalizeBuildingLabel(value) {
+  return splitBuildingLabel(value).name;
+}
+
+function createBuildingLabel(value, className = "building-label") {
+  const building = splitBuildingLabel(value);
+  if (!building.name && !building.address) return null;
+
+  const labelClass = className.includes("building-label") ? className : `${className} building-label`;
+  const element = createElement("span", labelClass);
+  if (building.name) element.append(createElement("span", "building-name", building.name));
+  if (building.address) element.append(createElement("span", "building-address", building.address));
+  return element;
+}
+
+function normalizeRoomLabel(value) {
+  const room = String(value || "").trim();
+  if (!room) return "";
+  return /^каб/i.test(room) ? room : `каб. ${room}`;
+}
+
 function lessonPlaceValue(lesson) {
   if (isLunchLesson(lesson)) return "";
   return lesson.place || [lesson.building, lesson.room].filter(Boolean).join(" ");
+}
+
+function createLessonPlace(className, lesson) {
+  if (isLunchLesson(lesson)) return null;
+  const building = normalizeBuildingLabel(lesson.building);
+  const room = normalizeRoomLabel(lesson.room);
+
+  if (!building && !room) {
+    const fallback = lessonPlaceValue(lesson);
+    return fallback ? createElement("div", className, fallback) : null;
+  }
+
+  const element = createElement("div", `${className} lesson-place`);
+  const buildingLabel = createBuildingLabel(lesson.building, "lesson-building");
+  if (buildingLabel) element.append(buildingLabel);
+  if (room) element.append(createElement("span", "lesson-room-number", room));
+  return element;
 }
 
 function renderLessons(target, lessons) {
@@ -464,9 +644,9 @@ function renderLessons(target, lessons) {
     );
     card.append(row, createElement("p", "lesson-subject", lesson.discipline || "Занятие"));
 
-    const place = lessonPlaceValue(lesson);
+    const place = createLessonPlace("lesson-room", lesson);
     if (place) {
-      card.append(createElement("div", "lesson-room", place));
+      card.append(place);
     }
 
     target.append(card);
@@ -493,7 +673,7 @@ function renderModalLessons(target, lessons) {
 
     const bottom = createElement("div", "modal-lesson-bottom");
     bottom.append(createElement("div", "modal-lesson-subject", lesson.discipline || "Занятие"));
-    bottom.append(createElement("div", "modal-lesson-place", lessonPlaceValue(lesson)));
+    bottom.append(createLessonPlace("modal-lesson-place", lesson) || createElement("div", "modal-lesson-place"));
     card.append(top, bottom);
     target.append(card);
   });
@@ -604,6 +784,7 @@ async function showSchedule() {
       resultPanel.scrollIntoView({ behavior: "smooth", block: "start" });
       return;
     }
+    error.publicKey = error.publicKey || "SCHEDULE_FAILED";
     showMessage(apiErrorText(error, "Не удалось загрузить расписание"));
   } finally {
     showScheduleButton.disabled = false;
@@ -671,7 +852,8 @@ function renderBuildingButtons() {
   }
 
   buildings.forEach((building) => {
-    const button = createElement("button", `setting-pill${building.number === state.building ? " active" : ""}`, building.name || `${building.number} корпус`);
+    const button = createElement("button", `setting-pill building-pill${building.number === state.building ? " active" : ""}`);
+    button.append(createBuildingLabel(building.name || `${building.number} корпус`) || document.createTextNode(building.name || `${building.number} корпус`));
     button.type = "button";
     button.dataset.building = building.number;
     buildingToggle.append(button);
@@ -721,6 +903,7 @@ async function loadTimeSlotsForDate() {
     apiState.timeSlots = [];
     renderPairOptions();
     if (error?.status !== 404) {
+      error.publicKey = error.publicKey || "TIME_TEMPLATE_FAILED";
       showMessage(apiErrorText(error, "Не удалось загрузить расписание звонков"));
     }
     return false;
@@ -749,7 +932,7 @@ function deriveTimeSlotsFromRooms(rooms) {
 function lessonMatchesSlot(lesson, slot) {
   if (!slot) return true;
   const candidates = [lesson.slotKey, lesson.lesson, lesson.pair, lesson.time].map((value) => String(value || "").toLowerCase());
-  const targets = [slot.value, slot.number, slot.label, slot.time].map((value) => String(value || "").toLowerCase()).filter(Boolean);
+  const targets = [slot.value, slot.number, slot.label, slot.time, slot.displayLesson].map((value) => String(value || "").toLowerCase()).filter(Boolean);
   if (targets.some((target) => candidates.includes(target))) return true;
 
   const lessonNumbers = String(lesson.lesson || "").split(/\D+/).filter(Boolean);
@@ -766,20 +949,37 @@ function normalizeRoomForSelectedSlot(room) {
   };
 }
 
+function roomLessonPreview(item) {
+  return item.matchedLessons?.[0] || item.lessons?.[0] || null;
+}
+
+async function loadRoomsForDate(dateKey, force = false) {
+  const cached = force ? null : readCachedRooms(dateKey);
+  if (cached) return cached;
+
+  const rooms = await scheduleService.getClassrooms({ dateKey, force });
+  writeCachedRooms(dateKey, rooms);
+  return rooms;
+}
+
 function roomMatchesBuilding(room) {
   if (!state.building) return true;
   return scheduleTransform.buildingNumber(room.building) === state.building;
 }
 
 async function renderRooms({ force = false } = {}) {
+  const requestId = ++roomsLoadRequestId;
+  const dateKey = selectedDateKey();
   renderInlineStatus(roomCards, "Загрузка аудиторий...");
 
   try {
     if (!apiState.timeSlots.length) {
       await loadTimeSlotsForDate();
+      if (requestId !== roomsLoadRequestId || dateKey !== selectedDateKey()) return;
     }
 
-    const rooms = await scheduleService.getClassrooms({ dateKey: selectedDateKey(), force });
+    const rooms = await loadRoomsForDate(dateKey, force);
+    if (requestId !== roomsLoadRequestId || dateKey !== selectedDateKey()) return;
     apiState.currentRooms = rooms;
 
     if (!apiState.timeSlots.length) {
@@ -805,11 +1005,17 @@ async function renderRooms({ force = false } = {}) {
       const title = createElement("div", "room-title");
       title.append(createElement("strong", "", item.room), createElement("span", "status-dot"));
       card.append(title, createElement("div", "room-status", item.busy ? "Занята" : "Свободна"));
+      const preview = roomLessonPreview(item);
+      const meta = createElement("div", "room-meta");
+      if (item.busy && preview?.group) meta.append(createElement("span", "room-person room-group", preview.group));
+      if (item.busy && preview?.teacher) meta.append(createElement("span", "room-person room-teacher", preview.teacher));
+      if (meta.children.length) card.append(meta);
       card.addEventListener("click", () => showRoomDetail(item));
       roomCards.append(card);
     });
   } catch (error) {
     renderInlineStatus(roomCards, "Не удалось загрузить аудитории");
+    error.publicKey = error.publicKey || "CLASSROOMS_FAILED";
     showMessage(apiErrorText(error, "Не удалось загрузить аудитории"));
   }
 }
@@ -835,6 +1041,9 @@ function showRoomDetail(item) {
   roomDetailContent.className = "room-detail-content";
   roomDetailContent.innerHTML = "";
   appendDetailLine("Статус:", item.busy ? "занята" : "свободна");
+  const roomBuilding = splitBuildingLabel(item.building);
+  appendDetailLine("Корпус:", roomBuilding.name);
+  appendDetailLine("Адрес:", roomBuilding.address);
   appendDetailLine("Пара:", selectedSlotLabel());
 
   if (item.busy && item.matchedLessons.length) {
@@ -877,19 +1086,39 @@ function applySettings() {
   });
 }
 
+function clearCatalogsAfterDateError() {
+  apiState.groupsByBuilding = {};
+  apiState.groups = [];
+  apiState.teachers = [];
+  apiState.buildings = [];
+  apiState.classrooms = [];
+  apiState.currentRooms = [];
+  apiState.currentLessons = [];
+  apiState.dictionaries = null;
+  apiState.catalogsLoaded = true;
+  state.selectedEntity = "";
+  setScheduleUrl("");
+  hideResult();
+  updateTrigger();
+  renderEntityOptions();
+  renderBuildingButtons();
+  renderCalendar();
+}
 function applyCatalogs(catalogs) {
   apiState.groupsByBuilding = catalogs.groups || {};
   apiState.groups = Object.values(apiState.groupsByBuilding).flat().sort(sortRu);
   apiState.teachers = (catalogs.teachers || []).sort(sortRu);
   apiState.buildings = catalogs.buildings || [];
-  apiState.classrooms = catalogs.classrooms || [];
+  apiState.classrooms = catalogs.classrooms || apiState.classrooms || [];
   apiState.dictionaries = catalogs.dictionaries;
+  setScheduleUrl(catalogs.meta?.url || "");
   apiState.scheduleDates = new Set(catalogs.dates || []);
   apiState.catalogsLoaded = true;
 
   const entities = getEntities();
-  if (state.selectedEntity && !entities.includes(state.selectedEntity)) {
-    state.selectedEntity = "";
+  const nextEntity = chooseAvailableEntity(entities);
+  if (nextEntity !== state.selectedEntity) {
+    state.selectedEntity = nextEntity;
     hideResult();
     saveState();
   }
@@ -906,30 +1135,36 @@ function applyCatalogs(catalogs) {
 
   startScheduleWatcher();
 
-  if (!apiState.groups.length) {
-    showMessage("Не удалось загрузить список групп");
-  }
-
-  if (!apiState.teachers.length) {
-    showMessage("Не удалось загрузить список преподавателей");
+  if (!apiState.groups.length || !apiState.teachers.length) {
+    showMessage(apiErrorText({
+      publicKey: "CATALOG_EMPTY",
+      message: [
+        !apiState.groups.length ? "groups" : "",
+        !apiState.teachers.length ? "teachers" : ""
+      ].filter(Boolean).join(",")
+    }, "Списки групп и преподавателей временно недоступны"));
   }
 
   if (catalogs.optionalErrors?.length) {
     const visibleError = catalogs.optionalErrors.find((error) => error?.status !== 404) || catalogs.optionalErrors[0];
     if (visibleError?.status !== 404) {
-      showMessage(apiErrorText(visibleError, "Часть публичных данных API не загрузилась"));
+      visibleError.publicKey = visibleError.publicKey || "CATALOG_PARTIAL";
+      showMessage(apiErrorText(visibleError, "Часть данных расписания временно недоступна"));
     }
   }
 }
 
-async function loadCatalogs() {
+async function loadCatalogs({ force = false } = {}) {
+  const requestId = ++catalogLoadRequestId;
+  const dateKey = selectedDateKey();
+
   try {
-    const catalogs = await scheduleService.getCatalogs({ dateDays: 180 });
+    const catalogs = await scheduleService.getCatalogs({ dateDays: 180, dateKey, force });
+    if (requestId !== catalogLoadRequestId || dateKey !== selectedDateKey()) return;
     applyCatalogs(catalogs);
   } catch (error) {
-    apiState.catalogsLoaded = true;
-    renderEntityOptions();
-    renderBuildingButtons();
+    if (requestId !== catalogLoadRequestId || dateKey !== selectedDateKey()) return;
+    clearCatalogsAfterDateError();
     showMessage(apiErrorText(error, "Не удалось загрузить публичные справочники"));
   }
 }
@@ -970,6 +1205,7 @@ function startScheduleWatcher() {
       if (error?.status === 404) return;
       if (!scheduleWatcherErrorShown) {
         scheduleWatcherErrorShown = true;
+        error.publicKey = error.publicKey || "CATALOG_PARTIAL";
         showMessage(apiErrorText(error, "Не удалось проверить обновления расписания"));
       }
     }
@@ -982,8 +1218,11 @@ window.addEventListener("schedule:changed", (event) => {
 
 modeButtons.forEach((button) => {
   button.addEventListener("click", () => {
-    state.mode = button.dataset.mode;
-    state.selectedEntity = "";
+    const nextMode = button.dataset.mode;
+    if (state.mode === nextMode) return;
+
+    state.mode = nextMode;
+    state.selectedEntity = chooseAvailableEntity(getEntities());
     hideResult();
     saveState();
     updateTrigger();
@@ -1028,6 +1267,13 @@ document.addEventListener("click", (event) => {
 });
 
 showScheduleButton.addEventListener("click", showSchedule);
+downloadScheduleButton.addEventListener("click", () => {
+  if (!apiState.scheduleUrl) {
+    showMessage("На выбранную дату файл расписания не найден");
+    return;
+  }
+  window.open(apiState.scheduleUrl, "_blank", "noopener");
+});
 settingsButton.addEventListener("click", () => settingsModal.showModal());
 roomsButton.addEventListener("click", () => {
   roomsModal.showModal();
@@ -1080,6 +1326,7 @@ prevWeek.addEventListener("click", () => {
   saveState();
   renderCalendar();
   refreshRoomsIfOpen();
+  refreshCatalogsForDate();
 });
 
 nextWeek.addEventListener("click", () => {
@@ -1090,6 +1337,7 @@ nextWeek.addEventListener("click", () => {
   saveState();
   renderCalendar();
   refreshRoomsIfOpen();
+  refreshCatalogsForDate();
 });
 
 prevMonth.addEventListener("click", () => {
@@ -1100,6 +1348,7 @@ prevMonth.addEventListener("click", () => {
   saveState();
   renderCalendar();
   refreshRoomsIfOpen();
+  refreshCatalogsForDate();
 });
 
 nextMonth.addEventListener("click", () => {
@@ -1110,7 +1359,12 @@ nextMonth.addEventListener("click", () => {
   saveState();
   renderCalendar();
   refreshRoomsIfOpen();
+  refreshCatalogsForDate();
 });
+
+if (isAuditMode) {
+  apiState.catalogsLoaded = true;
+}
 
 applySettings();
 updateTrigger();
@@ -1118,4 +1372,8 @@ renderEntityOptions();
 renderCalendar();
 renderColorButtons();
 renderPairOptions();
-loadCatalogs();
+updateDownloadButton();
+
+if (!isAuditMode) {
+  loadCatalogs();
+}

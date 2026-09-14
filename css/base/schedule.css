@@ -1,4 +1,4 @@
-﻿.result-panel {
+.result-panel {
   --result-meta-font: 14.5px;
   --result-main-font: 16px;
   grid-column: 1 / -1;
@@ -110,6 +110,10 @@
   line-height: 1.25;
 }
 
+.lesson-time {
+  white-space: nowrap;
+}
+
 .lesson-side {
   justify-self: end;
   max-width: min(260px, 38vw);
@@ -130,6 +134,47 @@
   font-size: var(--result-main-font);
   line-height: 1.2;
   font-weight: 600;
+}
+
+.lesson-place {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.lesson-building {
+  min-width: 0;
+  max-width: 100%;
+  justify-self: center;
+  overflow-wrap: anywhere;
+  text-align: center;
+  font-weight: 700;
+}
+
+.lesson-building .building-address {
+  margin-top: 2px;
+  font-size: max(11px, calc(var(--result-meta-font) - 2px));
+  font-weight: 600;
+  line-height: 1.15;
+  white-space: normal;
+}
+
+.lesson-room-number {
+  justify-self: end;
+  padding: 2px 8px;
+  color: var(--ink);
+  background: color-mix(in srgb, var(--lesson) 72%, var(--surface));
+  border: 1px solid var(--lesson-divider);
+  border-radius: 999px;
+  white-space: nowrap;
+  font-weight: 700;
+}
+
+.modal-lesson-place.lesson-place {
+  width: min(300px, 36vw);
+  max-width: min(300px, 36vw);
 }
 
 .modal-date-line {
@@ -190,6 +235,10 @@
   line-height: 1.25;
 }
 
+.modal-lesson-time {
+  white-space: nowrap;
+}
+
 .modal-lesson-side {
   justify-self: end;
   max-width: min(260px, 38vw);
@@ -199,7 +248,7 @@
 
 .modal-lesson-bottom {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) minmax(86px, auto);
   align-items: start;
   gap: 16px;
   min-width: 0;
@@ -217,8 +266,10 @@
 }
 
 .modal-lesson-place {
+  min-width: 0;
+  max-width: min(260px, 36vw);
   justify-self: end;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
   text-align: right;
 }
 
@@ -256,9 +307,24 @@
     font-size: 12px;
     font-weight: 500;
   }
-
   .modal-lesson-side {
     max-width: 34vw;
+  }
+
+  .modal-lesson-place,
+  .modal-lesson-place.lesson-place {
+    width: min(210px, 40vw);
+    max-width: 40vw;
+  }
+
+  .modal-lesson-place.lesson-place {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+  }
+
+  .modal-lesson-place .lesson-building {
+    justify-self: end;
+    text-align: right;
   }
 
   .modal-lesson-bottom {

@@ -1,9 +1,28 @@
 window.SchedulePublicApi = (() => {
   const api = window.ScheduleApiClient;
-  const PUBLIC_PREFIX = window.ScheduleConfig?.publicApiPrefix || "/api/v1/public";
+  const config = window.ScheduleConfig || {};
+  const PUBLIC_PREFIX = config.publicApiPrefix || "/api/v1/public";
+  const LEGACY_PREFIX = config.legacyApiPrefix || "/api/schedule/legacy";
+
+  function trimSlash(value) {
+    return String(value || "").replace(/\/$/, "");
+  }
 
   function byName(path, name) {
     return `${path}/${encodeURIComponent(name)}`;
+  }
+
+  function legacyBaseUrl() {
+    const runtime = window.SCHEDULE_LEGACY_API_BASE_URL || "";
+    return trimSlash(runtime || config.legacyApiBaseUrl || "");
+  }
+
+  function legacyUrl(path = "") {
+    const prefix = trimSlash(LEGACY_PREFIX);
+    const suffix = String(path || "").replace(/^\//, "");
+    const href = suffix ? `${prefix}/${suffix}` : prefix;
+    const base = legacyBaseUrl();
+    return base ? `${base}${href}` : href;
   }
 
   function listGroups() {
@@ -56,9 +75,27 @@ window.SchedulePublicApi = (() => {
     return api.request(`${PUBLIC_PREFIX}/schedule/dates`, { days });
   }
 
+  function getLegacyDates() {
+    return api.request(legacyUrl());
+  }
+
+  function getLegacyMeta(date) {
+    return api.request(legacyUrl(date));
+  }
+
+  function getLegacySchedule({ date, type = "all", name } = {}) {
+    if (!date) return Promise.resolve(null);
+    const parts = [date, type].filter(Boolean).map((part) => encodeURIComponent(part));
+    if (name) parts.push(encodeURIComponent(name));
+    return api.request(legacyUrl(parts.join("/")));
+  }
+
   return {
     getDictionaries,
     getGroup,
+    getLegacyDates,
+    getLegacyMeta,
+    getLegacySchedule,
     getSchedule,
     getScheduleDates,
     getTeacher,

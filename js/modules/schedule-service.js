@@ -40,36 +40,35 @@ window.ScheduleService = (() => {
       .catch((error) => ({ name, value: null, error, optional }));
   }
 
-  async function getCatalogs({ force = false, dateDays = 120 } = {}) {
-    const key = cacheKey({ type: "catalogs", dateDays });
+  async function getCatalogs({ force = false, dateDays = 120, dateKey } = {}) {
+    const key = cacheKey({ type: "catalogs", dateDays, dateKey, mode: request.apiMode?.() });
     return withCache(key, ttl.catalog, async () => {
       const criticalResults = [];
-      const groupsResult = await settle("groups", request.loadGroups(), transform.normalizeGroups);
+      const groupsResult = await settle("groups", request.loadGroups({ date: dateKey }), transform.normalizeGroups);
       criticalResults.push(groupsResult);
 
       if (!groupsResult.error) {
-        criticalResults.push(await settle("teachers", request.loadTeachers(), transform.normalizeTeachers));
+        criticalResults.push(await settle("teachers", request.loadTeachers({ date: dateKey }), transform.normalizeTeachers));
       }
 
       const hasCriticalError = criticalResults.some((item) => item.error);
       const optionalResults = hasCriticalError
         ? []
         : await Promise.all([
-          settle("classrooms", request.loadClassrooms(), transform.normalizeClassrooms, true),
-          settle("buildings", request.loadBuildings(), transform.normalizeBuildings, true),
+          settle("buildings", request.loadBuildings({ date: dateKey }), transform.normalizeBuildings, true),
           settle("dictionaries", request.loadDictionaries(), (value) => value, true),
-          settle("dates", request.loadScheduleDates(dateDays), transform.normalizeScheduleDates, true)
+          settle("dates", request.loadScheduleDates(dateDays), transform.normalizeScheduleDates, true),
+          settle("meta", request.loadScheduleMeta({ date: dateKey }), (value) => value, true)
         ]);
 
       const results = [...criticalResults, ...optionalResults];
-
-      return results.reduce((data, item) => {
-        data[item.name] = item.value;
+      const data = results.reduce((catalogs, item) => {
+        catalogs[item.name] = item.value;
         if (item.error) {
-          if (item.optional) data.optionalErrors.push(item.error);
-          else data.errors.push(item.error);
+          if (item.optional) catalogs.optionalErrors.push(item.error);
+          else catalogs.errors.push(item.error);
         }
-        return data;
+        return catalogs;
       }, {
         groups: {},
         teachers: [],
@@ -77,14 +76,23 @@ window.ScheduleService = (() => {
         buildings: [],
         dictionaries: null,
         dates: [],
+        meta: null,
         errors: [],
         optionalErrors: []
       });
+
+      if (data.errors.length) {
+        const error = data.errors[0];
+        error.partial = data;
+        throw error;
+      }
+
+      return data;
     }, force);
   }
 
   async function getScheduleDates({ days = 120, force = false } = {}) {
-    const key = cacheKey({ type: "dates", days });
+    const key = cacheKey({ type: "dates", days, mode: request.apiMode?.() });
     return withCache(key, ttl.dates, async () => {
       const response = await request.loadScheduleDates(days);
       return transform.normalizeScheduleDates(response);
@@ -92,24 +100,34 @@ window.ScheduleService = (() => {
   }
 
   async function getWeekDay({ type, query, weekStart, dateKey, force = false }) {
-    const key = cacheKey({ type: "week", view: type, query, weekStart });
-    const response = await withCache(key, ttl.schedule, () => request.loadWeekSchedule({ type, query, weekStart }), force);
+    const key = cacheKey({ type: "week", view: type, query, weekStart, dateKey, mode: request.apiMode?.() });
+    const response = await withCache(key, ttl.schedule, () => request.loadWeekSchedule({ type, query, weekStart, dateKey }), force);
     return transform.toUiLessonsForDate(response, dateKey);
   }
 
   async function getClassrooms({ dateKey, force = false } = {}) {
-    const key = cacheKey({ type: "classrooms", dateKey });
+    const key = cacheKey({ type: "classrooms", dateKey, mode: request.apiMode?.() });
     return withCache(key, ttl.classrooms, async () => {
       const response = await request.loadClassrooms(dateKey);
-      return transform.normalizeClassrooms(response);
+      return transform.normalizeClassrooms(response, dateKey);
     }, force);
   }
 
+  function fallbackTimeSlots(dateKey) {
+    return window.ScheduleTimeStore?.getSlots ? window.ScheduleTimeStore.getSlots(dateKey) : [];
+  }
+
   async function getTimeTemplate({ dateKey, force = false } = {}) {
-    const key = cacheKey({ type: "time-template", dateKey });
+    const key = cacheKey({ type: "time-template", dateKey, mode: request.apiMode?.() });
     return withCache(key, ttl.timeTemplate, async () => {
-      const response = await request.loadTimeTemplate({ date: dateKey });
-      return transform.normalizeTimeSlots(response);
+      try {
+        const response = await request.loadTimeTemplate({ date: dateKey });
+        const slots = transform.normalizeTimeSlots(response);
+        return slots.length ? slots : fallbackTimeSlots(dateKey);
+      } catch (error) {
+        if (error?.status === 404) return fallbackTimeSlots(dateKey);
+        throw error;
+      }
     }, force);
   }
 

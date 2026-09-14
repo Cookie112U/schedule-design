@@ -12,7 +12,7 @@
   }
 
   .layout {
-    grid-template-columns: minmax(0, 60%) minmax(250px, 30%);
+    grid-template-columns: minmax(0, 60%) minmax(0, 30%);
     gap: 10%;
   }
 
@@ -20,43 +20,106 @@
     padding-top: calc(var(--control) * 1.65);
   }
 
-  .calendar-wrap {
-    width: fit-content;
+  .calendar-wrap,
+  .calendar-wrap > div,
+  .week-strip,
+  .calendar-grid {
+    min-width: 0;
     max-width: 100%;
-  }
-
-  .calendar-wrap > div {
-    width: auto;
-    padding-inline: 0;
-  }
-
-  .month-arrow-left {
-    left: -38px;
-  }
-
-  .month-arrow-right {
-    right: -38px;
   }
 
   .week-strip,
   .calendar-grid {
-    width: auto;
-    grid-template-columns: repeat(7, var(--tile));
+    width: 100%;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
   }
 
   .day-cell {
-    width: var(--tile);
-    height: var(--tile);
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1;
     padding: 8px;
     border-radius: 14px;
   }
 
   .room-cards {
-    grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(124px, 1fr));
   }
 }
 
-@media (max-width: 980px) {
+@media (min-width: 451px) and (max-width: 980px) {
+  .app {
+    --tile: 74px;
+    --control: 52px;
+    --gap: 16px;
+    --month-arrow-size: clamp(28px, 5vw, 38px);
+    --month-arrow-gap: clamp(5px, 1vw, 10px);
+    --page-pad: clamp(20px, 4vw, 34px);
+    padding-top: 32px;
+  }
+
+  .app-header {
+    margin-bottom: 28px;
+  }
+
+  .layout {
+    grid-template-columns: 1fr;
+    gap: 26px;
+    justify-items: center;
+  }
+
+  .search-panel {
+    width: min(100%, 560px);
+    padding-top: 0;
+    margin-inline: auto;
+  }
+
+  .calendar-panel {
+    overflow: visible;
+  }
+
+  .calendar-toolbar {
+    min-height: 48px;
+    margin-bottom: 14px;
+  }
+
+  .calendar-wrap {
+    width: min(100%, 732px);
+    margin-inline: auto;
+  }
+
+  .week-strip,
+  .calendar-grid {
+    width: 100%;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+  }
+
+  .week-strip span {
+    font-size: 17px;
+  }
+
+  .day-cell {
+    padding: 8px;
+    border-radius: 14px;
+  }
+
+  .day-cell strong {
+    font-size: 20px;
+  }
+
+  .mode-button,
+  .select-trigger,
+  .primary-button,
+  .secondary-button {
+    min-height: 52px;
+  }
+
+  .room-cards {
+    grid-template-columns: repeat(auto-fit, minmax(124px, 1fr));
+  }
+}
+
+@media (max-width: 450px) {
   .app {
     padding: 32px 20px;
   }
@@ -159,51 +222,6 @@
     border-radius: 28px;
     background: var(--calendar-soft);
   }
-}
-
-@media (min-width: 700px) and (max-width: 900px) {
-  .app {
-    padding: 38px 34px;
-  }
-
-  .mobile-month strong {
-    font-size: 28px;
-  }
-
-  .week-strip span {
-    font-size: 19px;
-  }
-
-  .week-date {
-    width: 56px;
-    height: 56px;
-    font-size: 22px;
-  }
-
-  .mode-button,
-  .select-trigger,
-  .primary-button,
-  .secondary-button {
-    min-height: 58px;
-    font-size: 18px;
-  }
-
-  .icon-button {
-    width: 54px;
-    height: 54px;
-  }
-}
-
-@media (max-width: 620px) {
-  .room-cards {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (max-width: 520px) {
-  .app {
-    padding: 34px 20px 28px;
-  }
 
   .app-header {
     padding-bottom: 16px;
@@ -299,6 +317,22 @@
     font-size: var(--result-main-font);
   }
 
+  .lesson-place {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+    gap: 8px;
+  }
+
+  .lesson-building {
+    justify-self: start;
+    text-align: left;
+  }
+
+  .lesson-room-number {
+    align-self: start;
+    font-size: var(--result-meta-font);
+  }
+
   .color-grid {
     grid-template-columns: repeat(4, 1fr);
   }
@@ -307,5 +341,11 @@
     right: 12px;
     bottom: 12px;
     transform: none;
+  }
+}
+
+@media (max-width: 620px) {
+  .room-cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }

@@ -38,18 +38,6 @@ window.ScheduleHolidayParticles = (() => {
       twinkle: true,
       opacityRange: [0.46, 0.86]
     },
-    "tagil-day": {
-      colors: ["#ff6b1a", "#ff8c2e", "#ffa040", "#ffb85c", "#f0650e", "#ffd166"],
-      shape: "spark",
-      sizeRange: [3, 12],
-      speedRange: [0.7, 2.55],
-      driftRange: [-0.82, 0.82],
-      maxParticles: 104,
-      direction: "up",
-      twinkle: true,
-      opacityRange: [0.58, 1],
-      glow: true
-    },
     september: {
       colors: ["#e8a84c", "#d4913e", "#f0b65c", "#c2782a", "#bd7e34", "#f5d08c"],
       shape: "leaf",

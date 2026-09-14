@@ -24,6 +24,11 @@ window.ScheduleTransform = (() => {
     return match ? match[0] : result;
   }
 
+  function buildingTitle(building) {
+    if (!building || typeof building !== "object") return text(building);
+    return compact([building.number || building.name || building.code, building.address]).join(" ");
+  }
+
   function buildingName(value) {
     const result = text(value);
     if (!result) return "";
@@ -36,21 +41,29 @@ window.ScheduleTransform = (() => {
     return teacher?.full_name || teacher?.full_name_long || teacher?.name || teacher?.short_name || "";
   }
 
+  function upperGroup(value) {
+    return text(value).toLocaleUpperCase("ru-RU");
+  }
+
   function groupCode(group) {
-    if (typeof group === "string") return group;
-    return group?.code || group?.name || group?.group_code || "";
+    if (typeof group === "string") return upperGroup(group);
+    return upperGroup(group?.code || group?.name || group?.group_code || "");
   }
 
   function classroomName(room) {
-    if (typeof room === "string") return room;
+    if (typeof room === "string" || typeof room === "number") return room;
     if (room?.classroom && typeof room.classroom === "object") return classroomName(room.classroom);
     if (room?.room && typeof room.room === "object") return classroomName(room.room);
     return room?.number || room?.name || room?.classroom || room?.classroom_name || room?.room || "";
   }
 
   function classroomBuilding(room) {
-    if (!room || typeof room === "string") return "";
+    if (!room || typeof room === "string" || typeof room === "number") return "";
     return room?.building?.number || room?.building?.name || room?.building || room?.building_name || "";
+  }
+
+  function sortRu(a, b) {
+    return a.localeCompare(b, "ru", { numeric: true, sensitivity: "base" });
   }
 
   function normalizeGroups(payload) {
@@ -59,14 +72,17 @@ window.ScheduleTransform = (() => {
     if (payload?.results) return normalizeGroups(payload.results);
 
     if (Array.isArray(payload)) {
-      return payload.reduce((result, group) => {
+      const result = payload.reduce((data, group) => {
         const code = groupCode(group);
-        if (!code) return result;
+        if (!code) return data;
         const building = buildingName(group?.building?.name || group?.building_name || group?.building || group?.corpus || "Группы");
-        if (!result[building]) result[building] = [];
-        result[building].push(code);
-        return result;
+        if (!data[building]) data[building] = [];
+        data[building].push(code);
+        return data;
       }, {});
+
+      Object.keys(result).forEach((building) => result[building].sort(sortRu));
+      return result;
     }
 
     if (!payload || typeof payload !== "object" || Array.isArray(payload)) return {};
@@ -92,8 +108,10 @@ window.ScheduleTransform = (() => {
     if (payload?.results) return normalizeBuildings(payload.results);
     if (!Array.isArray(payload)) return [];
     return payload.map((building) => {
-      const name = text(building?.name || building?.title || building?.code || building);
-      const number = buildingNumber(building?.number || building?.code || name);
+      const title = text(building?.name || building?.title || building?.number || building?.code || building);
+      const address = text(building?.address);
+      const name = compact([title, address]).join(" ");
+      const number = buildingNumber(building?.number || building?.code || title || name);
       return {
         code: text(building?.code || number || name),
         name,
@@ -102,43 +120,67 @@ window.ScheduleTransform = (() => {
     }).filter((building) => building.name || building.number);
   }
 
+  function normalizeDateKey(value) {
+    const raw = text(value?.date || value?.schedule_date || value?.day || value);
+    const ruMatch = raw.match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
+    if (ruMatch) return `${ruMatch[3]}-${ruMatch[2]}-${ruMatch[1]}`;
+    const isoMatch = raw.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    return isoMatch ? `${isoMatch[1]}-${isoMatch[2]}-${isoMatch[3]}` : "";
+  }
+
   function normalizeScheduleDates(payload) {
     if (payload?.dates) return normalizeScheduleDates(payload.dates);
     if (payload?.schedule_dates) return normalizeScheduleDates(payload.schedule_dates);
     if (payload?.items) return normalizeScheduleDates(payload.items);
     if (payload?.results) return normalizeScheduleDates(payload.results);
     if (!Array.isArray(payload)) return [];
-    return compact(payload);
+    return compact(payload.map(normalizeDateKey)).sort();
   }
 
   function normalizeTimeSlots(payload) {
     const slots = Array.isArray(payload?.slots) ? payload.slots : Array.isArray(payload) ? payload : [];
     return slots.map((slot) => {
-      const number = text(slot?.number || slot?.slot_number || slot?.id);
-      const label = text(slot?.label || slot?.name || (number ? `${number} пара` : ""));
-      const time = joinTime(slot?.start_time || slot?.time_start, slot?.end_time || slot?.time_end, slot?.time);
+      const number = text(slot?.number || slot?.slot_number || slot?.id || slot?.lesson);
+      const label = text(slot?.label || slot?.name || slot?.pair || (number ? `${number} пара` : ""));
+      const time = joinTime(slot?.start_time || slot?.time_start, slot?.start, slot?.end_time || slot?.time_end || slot?.end, slot?.time);
+      const value = text(slot?.value || number || label || time);
       return {
-        value: number || label || time,
+        value,
         number,
         label,
         time,
         type: text(slot?.type)
       };
-    }).filter((slot) => slot.value);
+    }).filter((slot) => slot.value || slot.time);
+  }
+
+  function firstLessonNumber(value) {
+    const first = text(value).match(/\d+/)?.[0];
+    return first ? Number(first) : Number.MAX_SAFE_INTEGER;
+  }
+
+  function numericLessonEntries(payload) {
+    if (!payload || typeof payload !== "object" || Array.isArray(payload)) return [];
+    return Object.entries(payload)
+      .filter(([key, value]) => /^\d+(?:-\d+)?$/.test(key) && value && typeof value === "object")
+      .map(([lesson, value]) => ({ ...value, lesson: value.lesson || lesson }))
+      .sort((a, b) => firstLessonNumber(a.lesson) - firstLessonNumber(b.lesson));
   }
 
   function getLessonsContainer(payload) {
     if (!payload) return [];
     if (Array.isArray(payload)) return payload;
+    const numericEntries = numericLessonEntries(payload);
+    if (numericEntries.length) return numericEntries;
     if (Array.isArray(payload.lessons)) return payload.lessons;
     if (Array.isArray(payload.items)) return payload.items;
     if (Array.isArray(payload.schedule)) return payload.schedule;
-    if (payload.discipline || payload.subject || payload.event_name || payload.time_start || payload.start_time || payload.slot) return [payload];
+    if (payload.discipline || payload.subject || payload.event_name || payload.time_start || payload.start_time || payload.slot || payload.lesson || payload.name) return [payload];
     return [];
   }
 
   function readLessonDate(lesson) {
-    return text(lesson?.date || lesson?.day || lesson?.schedule_date || lesson?.lesson_date).slice(0, 10);
+    return normalizeDateKey(lesson?.date || lesson?.day || lesson?.schedule_date || lesson?.lesson_date);
   }
 
   function dayPayloadFromWeek(payload, dateKey) {
@@ -156,7 +198,8 @@ window.ScheduleTransform = (() => {
     if (Array.isArray(payload)) {
       const day = payload.find((item) => readLessonDate(item) === dateKey && (item.lessons || item.items || item.schedule));
       if (day) return day;
-      return payload.filter((lesson) => readLessonDate(lesson) === dateKey);
+      const datedLessons = payload.filter((lesson) => readLessonDate(lesson) === dateKey);
+      return datedLessons.length ? datedLessons : payload;
     }
 
     if (Array.isArray(payload.lessons)) {
@@ -209,13 +252,16 @@ window.ScheduleTransform = (() => {
     return compact([lesson?.group, lesson?.group_code, lesson?.subgroup].map(groupCode));
   }
 
-  function lessonClassrooms(lesson) {
-    const rooms = Array.isArray(lesson?.classrooms)
-      ? lesson.classrooms
-      : [lesson?.classroom, lesson?.room, lesson?.classroom_name].filter(Boolean);
+  function lessonRooms(lesson) {
+    if (Array.isArray(lesson?.classrooms)) return lesson.classrooms;
+    if (Array.isArray(lesson?.rooms)) return lesson.rooms;
+    return [lesson?.classroom, lesson?.room, lesson?.classroom_name].filter(Boolean);
+  }
 
-    return rooms.map((room) => ({
-      building: buildingName(classroomBuilding(room)),
+  function lessonClassrooms(lesson) {
+    const inheritedBuilding = buildingTitle(lesson?.building) || lesson?.building_name || "";
+    return lessonRooms(lesson).map((room) => ({
+      building: buildingName(classroomBuilding(room) || inheritedBuilding),
       room: classroomName(room)
     })).filter((room) => room.building || room.room);
   }
@@ -241,18 +287,19 @@ window.ScheduleTransform = (() => {
     };
   }
 
-  function toUiLessons(payload = []) {
-    return getLessonsContainer(payload).map(toUiLesson);
+  function toUiLessons(payload = [], dateKey) {
+    const lessons = getLessonsContainer(payload).map(toUiLesson);
+    return window.ScheduleTimeStore?.applyTimes ? window.ScheduleTimeStore.applyTimes(lessons, dateKey) : lessons;
   }
 
   function toUiLessonsForDate(payload, dateKey) {
-    return toUiLessons(dayPayloadFromWeek(payload, dateKey));
+    return toUiLessons(dayPayloadFromWeek(payload, dateKey), dateKey);
   }
 
-  function normalizeClassroomRecord(record, building) {
+  function normalizeClassroomRecord(record, building, dateKey) {
     const room = classroomName(record);
     const rawLessons = record?.lessons || record?.schedule || record?.items || record?.occupied_lessons || record?.occupied_by || [];
-    const lessons = Array.isArray(rawLessons) ? toUiLessons(rawLessons) : toUiLessons([rawLessons]);
+    const lessons = Array.isArray(rawLessons) ? toUiLessons(rawLessons, dateKey) : toUiLessons([rawLessons], dateKey);
     return {
       room,
       building: buildingName(building || classroomBuilding(record)),
@@ -261,40 +308,78 @@ window.ScheduleTransform = (() => {
     };
   }
 
-  function normalizeClassrooms(payload) {
+  function legacyBuildingValue(building) {
+    return buildingTitle(building) || building;
+  }
+
+  function normalizeLegacyAllClassrooms(payload, dateKey) {
+    const rooms = new Map();
+
+    payload.forEach((buildingBlock) => {
+      const building = buildingName(legacyBuildingValue(buildingBlock?.building));
+      const groups = Array.isArray(buildingBlock?.schedule) ? buildingBlock.schedule : [];
+
+      groups.forEach((groupBlock) => {
+        const group = groupCode(groupBlock?.name || groupBlock?.group || groupBlock);
+        getLessonsContainer(groupBlock).forEach((rawLesson) => {
+          const rawRooms = lessonRooms(rawLesson);
+          if (!rawRooms.length) return;
+
+          const uiLesson = toUiLessons([{ ...rawLesson, group: rawLesson.group || group, building }], dateKey)[0];
+          rawRooms.forEach((rawRoom) => {
+            const room = classroomName(rawRoom);
+            if (!room) return;
+            const roomBuilding = buildingName(classroomBuilding(rawRoom) || building);
+            const key = `${roomBuilding}|${room}`;
+            if (!rooms.has(key)) {
+              rooms.set(key, { room, building: roomBuilding, busy: false, lessons: [] });
+            }
+            const entry = rooms.get(key);
+            entry.busy = true;
+            entry.lessons.push(uiLesson);
+          });
+        });
+      });
+    });
+
+    return Array.from(rooms.values());
+  }
+
+  function normalizeClassrooms(payload, dateKey) {
     if (!payload) return [];
 
+    if (Array.isArray(payload) && payload.some((item) => item?.building && Array.isArray(item?.schedule))) {
+      return normalizeLegacyAllClassrooms(payload, dateKey);
+    }
+
     if (Array.isArray(payload)) {
-      return payload.map((record) => normalizeClassroomRecord(record)).filter((room) => room.room);
+      return payload.map((record) => normalizeClassroomRecord(record, "", dateKey)).filter((room) => room.room);
     }
 
     if (Array.isArray(payload.classrooms)) {
-      return payload.classrooms.map((record) => normalizeClassroomRecord(record)).filter((room) => room.room);
+      return payload.classrooms.map((record) => normalizeClassroomRecord(record, "", dateKey)).filter((room) => room.room);
     }
 
     if (Array.isArray(payload.buildings)) {
       return payload.buildings.flatMap((building) => {
         const rooms = building.classrooms || building.rooms || [];
-        return rooms.map((record) => normalizeClassroomRecord(record, building.name || building.number || building.code));
+        return rooms.map((record) => normalizeClassroomRecord(record, building.name || building.number || building.code, dateKey));
       }).filter((room) => room.room);
     }
 
     if (typeof payload === "object") {
       return Object.entries(payload).flatMap(([building, list]) => {
         if (!Array.isArray(list)) return [];
-        return list.map((record) => normalizeClassroomRecord(record, building));
+        return list.map((record) => normalizeClassroomRecord(record, building, dateKey));
       }).filter((room) => room.room);
     }
 
     return [];
   }
 
-  function sortRu(a, b) {
-    return a.localeCompare(b, "ru", { numeric: true, sensitivity: "base" });
-  }
-
   return {
     buildingName,
+    buildingTitle,
     buildingNumber,
     normalizeBuildings,
     normalizeClassrooms,

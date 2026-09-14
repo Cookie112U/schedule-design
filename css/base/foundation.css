@@ -1,4 +1,4 @@
-﻿:root {
+:root {
   --accent: #f4ff00;
   --accent-ink: #252525;
   --bg: #ebebeb;
@@ -21,6 +21,8 @@
   --gap: 20px;
   --page-pad: min(7vw, 100px);
   --font-scale: 1;
+  --month-arrow-size: 42px;
+  --month-arrow-gap: 10px;
 }
 
 :root[data-theme="dark"],
