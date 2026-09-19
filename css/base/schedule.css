@@ -1,6 +1,4 @@
 .result-panel {
-  --result-meta-font: 14.5px;
-  --result-main-font: 16px;
   grid-column: 1 / -1;
   width: 100%;
   margin-top: calc(var(--gap) * 1.4);
@@ -11,16 +9,6 @@
 
 .result-panel.hidden {
   display: none;
-}
-
-.app[data-size="small"] .result-panel {
-  --result-meta-font: 14px;
-  --result-main-font: 14px;
-}
-
-.app[data-size="large"] .result-panel {
-  --result-meta-font: 15px;
-  --result-main-font: 18px;
 }
 
 .result-date {
@@ -223,7 +211,7 @@
   color: var(--accent-ink);
   background: var(--accent);
   border-radius: 999px;
-  font-size: 14px;
+  font-size: var(--result-meta-font);
   font-weight: 700;
   line-height: 1;
 }
@@ -231,7 +219,7 @@
 .modal-lesson-time,
 .modal-lesson-side {
   min-width: 0;
-  font-size: 14px;
+  font-size: var(--result-meta-font);
   line-height: 1.25;
 }
 
@@ -256,7 +244,7 @@
 
 .modal-lesson-subject,
 .modal-lesson-place {
-  font-size: 18px;
+  font-size: var(--result-main-font);
   line-height: 1.28;
 }
 
@@ -274,6 +262,11 @@
 }
 
 @media (max-width: 760px) {
+  :root {
+    --modal-result-meta-font: clamp(11px, calc(var(--result-meta-font) * 0.84), 14px);
+    --modal-result-main-font: clamp(12px, calc(var(--result-main-font) * 0.82), 15px);
+  }
+
   .modal-date-line {
     gap: 6px 16px;
     margin-bottom: 14px;
@@ -298,13 +291,13 @@
     min-width: 26px;
     min-height: 18px;
     padding: 0 6px;
-    font-size: 12px;
+    font-size: var(--modal-result-meta-font);
     font-weight: 700;
   }
 
   .modal-lesson-time,
   .modal-lesson-side {
-    font-size: 12px;
+    font-size: var(--modal-result-meta-font);
     font-weight: 500;
   }
   .modal-lesson-side {
@@ -334,7 +327,7 @@
 
   .modal-lesson-subject,
   .modal-lesson-place {
-    font-size: 13px;
+    font-size: var(--modal-result-main-font);
     font-weight: 500;
     line-height: 1.22;
   }
@@ -348,17 +341,17 @@
   .modal-lesson-number {
     min-width: 24px;
     min-height: 17px;
-    font-size: 11px;
+    font-size: min(var(--modal-result-meta-font), 12px);
   }
 
   .modal-lesson-time,
   .modal-lesson-side {
-    font-size: 11px;
+    font-size: min(var(--modal-result-meta-font), 12px);
   }
 
   .modal-lesson-subject,
   .modal-lesson-place {
-    font-size: 12px;
+    font-size: min(var(--modal-result-main-font), 13px);
   }
 }
 

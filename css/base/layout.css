@@ -1,9 +1,12 @@
 .app-header {
+  width: 100%;
+  max-width: var(--content-max);
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 20px;
   margin-bottom: 44px;
+  margin-inline: auto;
 }
 
 .brand {
@@ -43,11 +46,14 @@
 }
 
 .layout {
+  width: 100%;
+  max-width: var(--content-max);
   display: grid;
   grid-template-columns: minmax(0, 60%) minmax(0, 30%);
   gap: 10%;
   align-items: start;
   font-size: calc(16px * var(--font-scale));
+  margin-inline: auto;
 }
 
 .calendar-panel {

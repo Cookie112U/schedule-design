@@ -92,6 +92,7 @@ const defaults = {
   visibleDate: toDateKey(new Date(today.getFullYear(), today.getMonth(), 1)),
   theme: "light",
   size: "medium",
+  width: "standard",
   output: "bottom",
   accent: accentColors[0],
   building: "",
@@ -126,6 +127,10 @@ const availableHolidayModes = new Set(Array.from(document.querySelectorAll("[dat
 if (!availableHolidayModes.has(state.holidayMode)) {
   state.holidayMode = defaults.holidayMode;
 }
+const availableWidths = new Set(["compact", "standard", "full"]);
+if (!availableWidths.has(state.width)) {
+  state.width = defaults.width;
+}
 
 let scheduleWatcherErrorShown = false;
 let stopScheduleWatcher = null;
@@ -143,6 +148,7 @@ function saveState() {
     visibleDate: toDateKey(state.visibleDate),
     theme: state.theme,
     size: state.size,
+    width: state.width,
     output: state.output,
     accent: state.accent,
     building: state.building,
@@ -1069,8 +1075,10 @@ function applySettings() {
   const holiday = activeHoliday(state.holidayMode, today);
   app.dataset.theme = state.theme;
   app.dataset.size = state.size;
+  app.dataset.width = state.width;
   document.documentElement.dataset.theme = state.theme;
   document.documentElement.dataset.size = state.size;
+  document.documentElement.dataset.width = state.width;
   document.documentElement.style.setProperty("--accent", state.accent);
   document.documentElement.style.setProperty("--accent-ink", accentInkFor(state.accent));
   app.dataset.holiday = holiday;
@@ -1289,7 +1297,7 @@ document.querySelectorAll("[data-setting]").forEach((button) => {
   button.addEventListener("click", () => {
     const setting = button.dataset.setting;
     state[setting] = button.dataset.value;
-    hideResult();
+    if (setting === "output") hideResult();
     applySettings();
     saveState();
   });

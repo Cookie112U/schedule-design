@@ -92,6 +92,10 @@
   overflow: hidden;
 }
 
+#settingsModal .modal-card {
+  overflow-y: auto;
+}
+
 .rooms-card {
   width: 100%;
   overflow-x: hidden;

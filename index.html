@@ -17,7 +17,7 @@
     <link rel="stylesheet" href="css/holidays/holiday-buttons.css" />
   </head>
   <body>
-    <div class="app" data-theme="light" data-size="medium">
+    <div class="app" data-theme="light" data-size="medium" data-width="standard">
       <div class="holiday-layer" aria-hidden="true">
         <canvas class="holiday-particles" id="holidayParticles"></canvas>
         <div class="garland"></div>
@@ -149,6 +149,15 @@
             <button type="button" class="setting-pill" data-setting="size" data-value="small">Маленький</button>
             <button type="button" class="setting-pill active" data-setting="size" data-value="medium">Средний</button>
             <button type="button" class="setting-pill" data-setting="size" data-value="large">Большой</button>
+          </div>
+        </section>
+
+        <section class="settings-group">
+          <h3>Ширина содержимого</h3>
+          <div class="segmented">
+            <button type="button" class="setting-pill" data-setting="width" data-value="compact">Компактно</button>
+            <button type="button" class="setting-pill active" data-setting="width" data-value="standard">Стандартно</button>
+            <button type="button" class="setting-pill" data-setting="width" data-value="full">Во всю ширину</button>
           </div>
         </section>
 

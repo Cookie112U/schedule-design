@@ -306,6 +306,12 @@ function assertCurrentUxRequirements() {
   const holidayNumbers = read("css/holidays/holiday-numbers.css");
 
   assert(/monthLabel\.textContent = `\$\{months\[month\]\} \$\{year\}`/.test(app), "desktop month label must include year");
+  assert(/data-setting="width" data-value="compact"/.test(html) && /data-setting="width" data-value="full"/.test(html), "settings must provide compact and full content widths");
+  assert(/width:\s*"standard"/.test(app) && /document\.documentElement\.dataset\.width = state\.width/.test(app), "content width must be persisted and applied to the document");
+  assert(/availableWidths\.has\(state\.width\)/.test(app), "invalid saved content widths must fall back safely");
+  assert(/--content-max:\s*1440px/.test(read("css/base/foundation.css")), "large screens must have a standard content width limit");
+  assert(/max-width:\s*var\(--content-max\)/.test(layout), "header and layout must use the selected content width limit");
+  assert(/font-size:\s*var\(--result-meta-font\)/.test(schedule) && /font-size:\s*var\(--result-main-font\)/.test(schedule), "bottom and modal schedules must follow the selected size");
   assert(/mobileMonthTitle\.textContent = `\$\{months\[month\]\} \$\{year\}`/.test(app), "mobile/tablet month label must include year");
   assert(/const maxFavorites = 18;/.test(app), "favorites list must be limited to 18 items");
   assert(/\.slice\(0, maxFavorites\)/.test(app), "rendered favorites must be capped");
