@@ -21,7 +21,7 @@ function assertNoTagilHoliday() {
     "index.html",
     "js/modules/holiday.js",
     "js/modules/holiday-particles.js",
-    "css/main.css"
+    "src/app.css"
   ];
 
   for (const file of activeFiles) {
@@ -182,90 +182,12 @@ function assertJavaScriptSyntax() {
   }
 }
 
-function sizeVars(viewport, size) {
-  const isLaptopNarrow = viewport >= 981 && viewport <= 1180;
-  if (isLaptopNarrow) {
-    return { tile: 64, control: 46, gap: 12, pagePad: 24, fontScale: size === "small" ? 0.92 : size === "large" ? 1.08 : 1 };
-  }
-
-  const base = {
-    small: { tile: 78, control: 48, gap: 16, pagePad: Math.min(viewport * 0.05, 76), fontScale: 0.92 },
-    medium: { tile: 88, control: 60, gap: 20, pagePad: Math.min(viewport * 0.07, 100), fontScale: 1 },
-    large: { tile: 100, control: 70, gap: 28, pagePad: Math.min(viewport * 0.05, 80), fontScale: 1.08 }
-  }[size];
-
-  if (viewport >= 981 && viewport <= 1360 && size === "small") {
-    base.tile = 72;
-    base.control = 46;
-    base.gap = 16;
-  }
-
-  return base;
-}
-
-function assertResponsiveBreakpoints() {
-  const css = read("css/base/responsive.css");
-  assert(/@media \(max-width: 450px\)/.test(css), "мобильная версия должна начинаться только до 450px");
-  assert(!/@media \(max-width: 980px\)/.test(css), "768/980 не должны переключать календарь в мобильную неделю");
-  assert(/@media \(min-width: 451px\) and \(max-width: 980px\)/.test(css), "планшеты должны получать полный календарь в отдельном режиме");
-  const tabletBlock = css.match(/@media \(min-width: 451px\) and \(max-width: 980px\) \{[\s\S]*?\n\}/)?.[0] || "";
-  assert(!/\.calendar-grid[\s\S]*display:\s*none/.test(tabletBlock), "на 768px calendar-grid не должен скрываться");
-}
-function assertDesktopLayoutMath() {
-  const widths = [981, 1024, 1100, 1180, 1181, 1280, 1366, 1440, 1536, 1920];
-  const sizes = ["small", "medium", "large"];
-  const arrowSize = 42;
-  const arrowGap = 10;
-
-  for (const width of widths) {
-    for (const size of sizes) {
-      const vars = sizeVars(width, size);
-      const content = width - vars.pagePad * 2;
-      const calendarColumn = content * 0.6;
-      const searchColumn = content * 0.3;
-      const layoutGap = content * 0.1;
-      const total = calendarColumn + searchColumn + layoutGap;
-      const targetCalendar = vars.tile * 7 + 12 + arrowSize * 2 + arrowGap * 2;
-      const calendarWrap = Math.min(calendarColumn, targetCalendar);
-      const gridWidth = calendarWrap - arrowSize * 2 - arrowGap * 2;
-      const cell = gridWidth / 7;
-      const modeHalf = searchColumn / 2;
-      const modeFont = Math.min(Math.max(15 * vars.fontScale, 14), 18);
-      const teacherButtonNeeds = 112 + 16 + modeFont * 0.1;
-
-      assert(total <= content + 0.1, `${width}/${size}: layout шире контейнера`);
-      assert(calendarWrap <= calendarColumn + 0.1, `${width}/${size}: календарь шире своей колонки`);
-      assert(gridWidth > 0, `${width}/${size}: сетка календаря схлопнулась`);
-      assert(cell >= 58, `${width}/${size}: ячейка календаря меньше безопасного минимума (${cell.toFixed(1)}px)`);
-      assert(modeHalf >= teacherButtonNeeds, `${width}/${size}: кнопка Преподаватель может потечь (${modeHalf.toFixed(1)}px)`);
-    }
-  }
-}
-
-function assertTabletCalendarMath() {
-  const widths = [451, 480, 520, 640, 700, 768, 820, 900, 980];
-  for (const width of widths) {
-    const arrowSize = Math.min(Math.max(width * 0.05, 28), 38);
-    const arrowGap = Math.min(Math.max(width * 0.01, 5), 10);
-    const pagePad = Math.min(Math.max(width * 0.04, 20), 34);
-    const content = width - pagePad * 2;
-    const calendarWrap = Math.min(content, 732);
-    const gridWidth = calendarWrap - arrowSize * 2 - arrowGap * 2;
-    const cell = gridWidth / 7;
-
-    assert(gridWidth > 0, `${width}: планшетная сетка календаря схлопнулась`);
-    assert(cell >= 49, `${width}: календарная ячейка слишком мала для режима с календарем (${cell.toFixed(1)}px)`);
-  }
-}
-
-
 function assertDownloadAndRoomCacheSupport() {
   const html = read("index.html");
   const app = read("js/app.js");
   const service = read("js/modules/schedule-service.js");
   const storage = read("js/modules/storage.js");
-  const overlays = read("css/base/overlays.css");
-  const responsive = read("css/base/responsive.css");
+  const scheduleCss = read("src/components/schedule.css");
 
   assert(/id="downloadSchedule" disabled/.test(html), "кнопка скачивания должна иметь id и стартовать disabled");
   assert(/setScheduleUrl\(catalogs\.meta\?\.url \|\| ""\)/.test(app), "app должен брать ссылку скачивания из meta.url выбранной даты");
@@ -278,30 +200,16 @@ function assertDownloadAndRoomCacheSupport() {
   assert(/loadRoomsForDate/.test(app) && /writeCachedRooms/.test(app), "app должен кешировать аудитории по выбранной дате");
   assert(!/settle\("classrooms", request\.loadClassrooms/.test(service), "каталоги не должны ждать загрузку всех аудиторий");
 
-  assert(/room-meta/.test(app) && /room-person/.test(overlays), "карточки аудиторий должны показывать группу/педагога чипами");
-  assert(/justify-items:\s*center/.test(responsive), "планшетный режим должен центрировать календарный layout");
-  assert(/\.search-panel[\s\S]*margin-inline:\s*auto/.test(responsive), "панель выбора на 768px должна быть по центру");
+  assert(/room-meta/.test(app) && /room-person/.test(scheduleCss), "карточки аудиторий должны показывать группу/педагога чипами");
 }
-function assertMobileBreakpoints() {
-  const widths = [320, 360, 375, 390, 414, 450];
-  for (const width of widths) {
-    const pagePad = 20;
-    const content = width - pagePad * 2;
-    const dateSize = width <= 450 ? 32 : 42;
-    const needed = dateSize * 7 + 48;
-    assert(needed <= content + 35, `${width}: мобильная неделя близка к переполнению (${needed}px / ${content}px)`);
-  }
-}
-
 function assertCurrentUxRequirements() {
   const html = read("index.html");
   const app = read("js/app.js");
   const request = read("js/modules/schedule-request.js");
   const transform = read("js/modules/schedule-transform.js");
-  const schedule = read("css/base/schedule.css");
-  const layout = read("css/base/layout.css");
-  const overlays = read("css/base/overlays.css");
-  const responsive = read("css/base/responsive.css");
+  const theme = read("src/theme.css");
+  const controls = read("src/components/controls.css");
+  const schedule = read("src/components/schedule.css");
   const holidayButtons = read("css/holidays/holiday-buttons.css");
   const holidayNumbers = read("css/holidays/holiday-numbers.css");
 
@@ -309,9 +217,10 @@ function assertCurrentUxRequirements() {
   assert(/data-setting="width" data-value="compact"/.test(html) && /data-setting="width" data-value="full"/.test(html), "settings must provide compact and full content widths");
   assert(/width:\s*"standard"/.test(app) && /document\.documentElement\.dataset\.width = state\.width/.test(app), "content width must be persisted and applied to the document");
   assert(/availableWidths\.has\(state\.width\)/.test(app), "invalid saved content widths must fall back safely");
-  assert(/--content-max:\s*1440px/.test(read("css/base/foundation.css")), "large screens must have a standard content width limit");
-  assert(/max-width:\s*var\(--content-max\)/.test(layout), "header and layout must use the selected content width limit");
-  assert(/font-size:\s*var\(--result-meta-font\)/.test(schedule) && /font-size:\s*var\(--result-main-font\)/.test(schedule), "bottom and modal schedules must follow the selected size");
+  assert(/--content-max:\s*90rem/.test(theme), "large screens must have a standard content width limit");
+  assert(/max-w-\(--content-max\)/.test(html), "header and layout must use the selected content width limit");
+  assert(/:root\[data-width="compact"\]/.test(theme) && /:root\[data-width="full"\]/.test(theme), "compact and full widths must override the content limit");
+  assert(/:root\[data-size="small"\]/.test(theme) && /:root\[data-size="large"\]/.test(theme), "size setting must scale the root font size");
   assert(/mobileMonthTitle\.textContent = `\$\{months\[month\]\} \$\{year\}`/.test(app), "mobile/tablet month label must include year");
   assert(/const maxFavorites = 18;/.test(app), "favorites list must be limited to 18 items");
   assert(/\.slice\(0, maxFavorites\)/.test(app), "rendered favorites must be capped");
@@ -322,19 +231,67 @@ function assertCurrentUxRequirements() {
   assert(/function buildingTitle/.test(transform), "schedule transform must preserve building title and address");
   assert(/function upperGroup/.test(transform) && /toLocaleUpperCase\("ru-RU"\)/.test(transform), "groups must be uppercased during normalization");
   assert(/const labelClass = className\.includes\("building-label"\)/.test(app), "building labels must keep shared address styling");
-  assert(/\.building-address \{\s*display:\s*block;/.test(overlays), "building address must render as a separate line");
+  assert(/\.building-address \{\s*@apply block/.test(controls), "building address must render as a separate line");
   assert(/\.lesson-building \.building-address/.test(schedule), "schedule cards must style building addresses");
   assert(/\.lesson-room-number/.test(schedule), "room number must be visually separated from building");
-  assert(/@media \(max-width: 450px\)[\s\S]*\.lesson-place \{[\s\S]*grid-template-columns: minmax\(0, 1fr\) auto;/.test(responsive), "mobile cards must keep building and room in one controlled row");
-  assert(/\.calendar-grid \{[\s\S]*grid-template-rows: repeat\(6, minmax\(0, 1fr\)\)/.test(layout), "base calendar grid must keep six rows while switching months");
+  assert(/\.lesson-place \{\s*@apply flex items-start justify-between/.test(schedule), "lesson cards must keep building and room in one controlled row");
 
   assert(/href="Img\/logo_small\.png"/.test(html), "favicon must use provided logo_small.png");
-  assert(/\.select-menu/.test(holidayButtons) && /\.month-menu/.test(holidayButtons), "holiday glass layer must cover custom dropdowns");
-  assert(/\.mode-button:not\(\.active\) \{[\s\S]*background: color-mix/.test(holidayButtons), "inactive student/teacher tab must not be transparent on holiday backgrounds");
-  assert(/\.primary-button,[\s\S]*\.mode-button\.active,[\s\S]*\.icon-button/.test(holidayButtons), "selected color must apply to primary buttons, active tabs, and header icons");
-  assert(/color: var\(--accent-ink\);[\s\S]*background: var\(--accent\);/.test(holidayButtons), "accent ink/background must be used after holiday overrides");
+  assert(/--user-accent-ink/.test(holidayButtons) && /--user-accent\b/.test(holidayButtons), "selected color must apply to primary buttons, active tabs, and header icons");
+  assert(!/var\(--accent(-ink)?\)/.test(holidayButtons), "holiday overrides must not use the removed --accent variable");
   assert(/data-theme="dark"\]\[data-holiday="february-23"\]/.test(holidayNumbers), "dark mobile February 23 number contrast must be overridden");
   assert(/data-theme="dark"\]\[data-holiday="victory-day"\]/.test(holidayNumbers), "dark mobile Victory Day number contrast must be overridden");
+}
+
+function assertTailwindSetup() {
+  const pkg = JSON.parse(read("package.json"));
+  const entry = read("src/app.css");
+  const html = read("index.html");
+  const theme = read("src/theme.css");
+
+  assert(pkg.scripts && /tailwindcss -i \.\/src\/app\.css -o \.\/css\/app\.css/.test(pkg.scripts["css:build"]), "package.json должен собирать css/app.css из src/app.css");
+  assert(pkg.devDependencies && pkg.devDependencies.tailwindcss && pkg.devDependencies["@tailwindcss/cli"], "Tailwind CSS и CLI должны быть в devDependencies");
+  assert(/@import "tailwindcss"/.test(entry) && /@source "\.\.\/index\.html"/.test(entry) && /@source "\.\.\/js"/.test(entry), "src/app.css должен подключать Tailwind и явные источники классов");
+  assert(/@custom-variant dark \(&:where\(\.dark, \.dark \*\)\)/.test(entry), "тёмная тема должна переключаться классом .dark, как на основном сайте");
+  assert(/<link rel="stylesheet" href="css\/app\.css" \/>/.test(html), "index.html должен подключать собранный css/app.css");
+  assert(!/css\/main\.css|css\/base\//.test(html), "index.html не должен ссылаться на старый CSS");
+  assert(!fs.existsSync(path.join(root, "css/main.css")) && !fs.existsSync(path.join(root, "css/base")), "старый css/main.css и css/base должны быть удалены");
+  assert(/Merriweather/.test(theme) && /Raleway/.test(theme) && /--color-primary-600:\s*#2451b8/.test(theme), "токены основного сайта (шрифты и палитра) должны быть на месте");
+  assert(/fonts\.googleapis\.com\/css\?family=Merriweather/.test(html) && /fonts\.googleapis\.com\/css\?family=Raleway/.test(html), "index.html должен подключать шрифты основного сайта");
+  assert(fs.statSync(path.join(root, "css/app.css")).size > 10000, "css/app.css не собран — выполните npm run css:build");
+}
+
+function assertMobileFirst() {
+  const html = read("index.html");
+  const calendar = read("src/components/calendar.css");
+  const sources = listFiles("src", ".css").map((file) => read(file)).join("\n");
+
+  assert(!/@media\s*\(\s*max-width/.test(sources), "в src/ не должно быть desktop-first @media (max-width)");
+  assert(/\.calendar-grid \{\s*@apply hidden grid-cols-7 gap-1 sm:grid;/.test(calendar), "сетка месяца скрыта на телефоне и появляется с sm");
+  assert(/\.week-date \{[^}]*sm:hidden/.test(calendar), "кружки дат недели показываются на телефоне и скрываются с sm");
+  assert(/\.mobile-month \{[^}]*sm:hidden/.test(calendar), "переключатель недели показывается только на телефоне");
+  assert(/grid-cols-\[minmax\(0,1fr\)\][^"]*lg:grid-cols-\[minmax\(0,1fr\)_23rem\]/.test(html), "макет: одна колонка на телефоне, две — от lg");
+  assert(/<meta name="viewport" content="width=device-width, initial-scale=1\.0" \/>/.test(html), "viewport должен быть задан");
+}
+
+function assertUiClassesAreBuilt() {
+  const built = read("css/app.css");
+  const app = read("js/app.js");
+  const html = read("index.html");
+  const classes = [
+    "primary-button", "secondary-button", "icon-button", "close-button", "select-trigger", "select-menu", "select-option",
+    "select-option-main", "select-check", "favorite-button", "mode-toggle", "mode-button", "segment", "segmented", "radio-card",
+    "radio-indicator", "native-select", "month-menu", "month-option", "day-cell", "week-date", "lesson-card", "lesson-number",
+    "lesson-room-number", "room-card", "room-person", "modal", "modal-card", "toast", "color-dot", "holiday-option"
+  ];
+  classes.forEach((name) => assert(built.includes(`.${name}`), `css/app.css не содержит .${name} — выполните npm run css:build`));
+
+  ["setting-pill", "modal-lesson-card", "renderModalLessons"].forEach((legacy) => {
+    assert(!app.includes(legacy) && !html.includes(legacy), `не должно остаться старого ${legacy}`);
+  });
+  assert(/type="radio"[^>]*data-setting="theme"/.test(html), "настройки должны быть RadioGroup");
+  assert(/addEventListener\("change"/.test(app) && /radio\.dataset\.setting/.test(app), "настройки должны сохранять события через change");
+  assert(/--user-accent/.test(app) && /classList\.toggle\("dark"/.test(app), "app.js должен выставлять акцент и класс .dark");
 }
 
 function assertErrorCatalog() {
@@ -368,10 +325,9 @@ assertTimeStore();
 assertModuleOrder();
 assertJavaScriptSyntax();
 assertRuntimeScheduleFlow();
-assertResponsiveBreakpoints();
-assertDesktopLayoutMath();
-assertTabletCalendarMath();
-assertMobileBreakpoints();
+assertTailwindSetup();
+assertMobileFirst();
+assertUiClassesAreBuilt();
 assertDownloadAndRoomCacheSupport();
 assertErrorCatalog();
 console.log("Static checks passed");
