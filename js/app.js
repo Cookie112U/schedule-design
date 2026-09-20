@@ -1070,8 +1070,14 @@ function applySettings() {
   document.documentElement.classList.toggle("dark", state.theme === "dark");
   document.documentElement.dataset.size = state.size;
   document.documentElement.dataset.width = state.width;
-  document.documentElement.style.setProperty("--user-accent", state.accent);
-  document.documentElement.style.setProperty("--user-accent-ink", accentInkFor(state.accent));
+  if (state.accent === accentColors[0]) {
+    // Фирменный акцент: цвет берётся из темы (primary-600 / primary-400 в тёмной).
+    document.documentElement.style.removeProperty("--user-accent");
+    document.documentElement.style.removeProperty("--user-accent-ink");
+  } else {
+    document.documentElement.style.setProperty("--user-accent", state.accent);
+    document.documentElement.style.setProperty("--user-accent-ink", accentInkFor(state.accent));
+  }
   app.dataset.holiday = holiday;
   startHolidayParticles(holiday);
   document.querySelectorAll("[data-setting]").forEach((radio) => {

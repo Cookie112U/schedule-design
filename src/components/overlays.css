@@ -5,7 +5,9 @@
 @layer components {
   /* ---------- Dialog ---------- */
   .modal {
-    @apply w-[calc(100%-1.5rem)] max-w-lg overflow-hidden rounded-xl border bg-background p-0 text-foreground shadow-lg;
+    @apply overflow-hidden rounded-xl border bg-background p-0 text-foreground shadow-lg;
+    width: var(--modal-narrow);
+    max-width: none;
     max-height: calc(100dvh - 1.5rem);
   }
 
@@ -19,7 +21,7 @@
 
   #scheduleModal,
   #roomsModal {
-    @apply sm:max-w-2xl;
+    width: var(--modal-wide);
   }
 
   .modal-card {

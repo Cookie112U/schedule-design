@@ -17,10 +17,10 @@
 .app[data-holiday]:not([data-holiday="none"]) .week-date.active,
 .app[data-holiday]:not([data-holiday="none"]) .icon-button,
 .app[data-holiday]:not([data-holiday="none"]) .holiday-option.active {
-  color: var(--user-accent-ink, #ffffff);
-  background: var(--user-accent, var(--color-primary-600));
-  border-color: color-mix(in srgb, var(--user-accent, var(--color-primary-600)) 74%, transparent);
-  box-shadow: 0 14px 30px color-mix(in srgb, var(--user-accent, var(--color-primary-600)) 24%, transparent);
+  color: var(--primary-foreground);
+  background: var(--primary);
+  border-color: color-mix(in srgb, var(--primary) 74%, transparent);
+  box-shadow: 0 14px 30px color-mix(in srgb, var(--primary) 24%, transparent);
 }
 
 .app[data-holiday="february-23"] .brand,

@@ -217,9 +217,11 @@ function assertCurrentUxRequirements() {
   assert(/data-setting="width" data-value="compact"/.test(html) && /data-setting="width" data-value="full"/.test(html), "settings must provide compact and full content widths");
   assert(/width:\s*"standard"/.test(app) && /document\.documentElement\.dataset\.width = state\.width/.test(app), "content width must be persisted and applied to the document");
   assert(/availableWidths\.has\(state\.width\)/.test(app), "invalid saved content widths must fall back safely");
-  assert(/--content-max:\s*90rem/.test(theme), "large screens must have a standard content width limit");
+  assert(/--content-max:\s*1440px/.test(theme), "large screens must have a standard content width limit");
   assert(/max-w-\(--content-max\)/.test(html), "header and layout must use the selected content width limit");
   assert(/:root\[data-width="compact"\]/.test(theme) && /:root\[data-width="full"\]/.test(theme), "compact and full widths must override the content limit");
+  assert(/--modal-wide/.test(theme) && /:root\[data-width="full"\][^}]*--modal-wide:\s*calc\(100vw - 1\.5rem\)/.test(theme), "modal windows must stretch with the content width setting");
+  assert(/width:\s*var\(--modal-wide\)/.test(read("src/components/overlays.css")) && /width:\s*var\(--modal-narrow\)/.test(read("src/components/overlays.css")), "dialogs must use the modal width tokens");
   assert(/:root\[data-size="small"\]/.test(theme) && /:root\[data-size="large"\]/.test(theme), "size setting must scale the root font size");
   assert(/mobileMonthTitle\.textContent = `\$\{months\[month\]\} \$\{year\}`/.test(app), "mobile/tablet month label must include year");
   assert(/const maxFavorites = 18;/.test(app), "favorites list must be limited to 18 items");
@@ -237,7 +239,7 @@ function assertCurrentUxRequirements() {
   assert(/\.lesson-place \{\s*@apply flex items-start justify-between/.test(schedule), "lesson cards must keep building and room in one controlled row");
 
   assert(/href="Img\/logo_small\.png"/.test(html), "favicon must use provided logo_small.png");
-  assert(/--user-accent-ink/.test(holidayButtons) && /--user-accent\b/.test(holidayButtons), "selected color must apply to primary buttons, active tabs, and header icons");
+  assert(/var\(--primary-foreground\)/.test(holidayButtons) && /var\(--primary\)/.test(holidayButtons), "selected color must apply to primary buttons, active tabs, and header icons");
   assert(!/var\(--accent(-ink)?\)/.test(holidayButtons), "holiday overrides must not use the removed --accent variable");
   assert(/data-theme="dark"\]\[data-holiday="february-23"\]/.test(holidayNumbers), "dark mobile February 23 number contrast must be overridden");
   assert(/data-theme="dark"\]\[data-holiday="victory-day"\]/.test(holidayNumbers), "dark mobile Victory Day number contrast must be overridden");
@@ -267,10 +269,10 @@ function assertMobileFirst() {
   const sources = listFiles("src", ".css").map((file) => read(file)).join("\n");
 
   assert(!/@media\s*\(\s*max-width/.test(sources), "в src/ не должно быть desktop-first @media (max-width)");
-  assert(/\.calendar-grid \{\s*@apply hidden grid-cols-7 gap-1 sm:grid;/.test(calendar), "сетка месяца скрыта на телефоне и появляется с sm");
-  assert(/\.week-date \{[^}]*sm:hidden/.test(calendar), "кружки дат недели показываются на телефоне и скрываются с sm");
-  assert(/\.mobile-month \{[^}]*sm:hidden/.test(calendar), "переключатель недели показывается только на телефоне");
-  assert(/grid-cols-\[minmax\(0,1fr\)\][^"]*lg:grid-cols-\[minmax\(0,1fr\)_23rem\]/.test(html), "макет: одна колонка на телефоне, две — от lg");
+  assert(/\.calendar-grid \{\s*@apply hidden grid-cols-7 gap-1 @min-\[26rem\]:grid;/.test(calendar), "сетка месяца скрыта на телефоне и появляется по контейнерному запросу");
+  assert(/\.week-date \{[^}]*@min-\[26rem\]:hidden/.test(calendar), "кружки дат недели показываются на телефоне и скрываются с sm");
+  assert(/\.mobile-month \{[^}]*@min-\[26rem\]:hidden/.test(calendar), "переключатель недели показывается только на телефоне");
+  assert(/grid-cols-\[minmax\(0,1fr\)\][^"]*@min-\[48rem\]:grid-cols-\[minmax\(0,1fr\)_21rem\]/.test(html), "макет: одна колонка на телефоне, две — по контейнерному запросу");
   assert(/<meta name="viewport" content="width=device-width, initial-scale=1\.0" \/>/.test(html), "viewport должен быть задан");
 }
 

@@ -77,7 +77,7 @@
   --input: var(--color-neutral-300);
   --ring: var(--primary);
 
-  --content-max: 90rem;
+  --content-max: 1440px;
 
   /* Алиасы старых переменных: на них ссылаются праздничные оформления. */
   --bg: var(--background);
@@ -94,27 +94,52 @@
   --popover: var(--color-neutral-900);
   --popover-foreground: var(--color-neutral-100);
 
+  /* На тёмном фоне primary-600 сливается с карточкой (neutral-800) — берём primary-400,
+     как в тёмных ссылках основного сайта. Свой акцент пользователя не трогаем. */
+  --primary: var(--user-accent, var(--color-primary-400));
   --primary-soft: color-mix(in oklab, var(--primary) 22%, transparent);
   --primary-soft-foreground: color-mix(in oklab, var(--primary) 55%, white);
 
   --secondary: var(--color-neutral-700);
   --secondary-foreground: var(--color-neutral-100);
-  --muted: var(--color-neutral-800);
+  /* muted/accent светлее карточки (neutral-800), иначе вкладки и дни календаря не видны. */
+  --muted: var(--color-neutral-700);
   --muted-foreground: var(--color-neutral-400);
-  --accent: var(--color-neutral-700);
+  --accent: var(--color-neutral-600);
   --accent-foreground: var(--color-neutral-50);
 
   --border: var(--color-neutral-700);
   --input: var(--color-neutral-600);
 }
 
-/* Настройка «Размер»: масштабируем корневой шрифт — все rem-размеры подстраиваются. */
+/* Настройка «Размер»: масштабируем корневой шрифт — все rem-размеры подстраиваются.
+   Пропорции как в прежнем дизайне: плитки календаря ~88/100px, кнопки ~60/70px.
+   На телефоне (mobile-first база) масштаб скромнее, от 640px — полный. */
 :root[data-size="small"] { font-size: 92%; }
-:root[data-size="large"] { font-size: 108%; }
+:root[data-size="medium"] { font-size: 110%; }
+:root[data-size="large"] { font-size: 125%; }
 
-/* Настройка «Ширина содержимого». */
-:root[data-width="compact"] { --content-max: 73.75rem; }
-:root[data-width="full"] { --content-max: 100%; }
+@media (min-width: 40rem) {
+  :root[data-size="medium"] { font-size: 135%; }
+  :root[data-size="large"] { font-size: 155%; }
+}
+
+/* Настройка «Ширина содержимого»: задаёт и ширину страницы, и ширину модальных окон.
+   --modal-wide — окна с расписанием и аудиториями, --modal-narrow — формы (настройки и т. п.). */
+:root {
+  --modal-wide: min(calc(100vw - 1.5rem), max(70vw, 42rem));
+  --modal-narrow: min(calc(100vw - 1.5rem), 36rem);
+}
+:root[data-width="compact"] {
+  --content-max: 1180px;
+  --modal-wide: min(calc(100vw - 1.5rem), 42rem);
+  --modal-narrow: min(calc(100vw - 1.5rem), 32rem);
+}
+:root[data-width="full"] {
+  --content-max: 100%;
+  --modal-wide: calc(100vw - 1.5rem);
+  --modal-narrow: min(calc(100vw - 1.5rem), 56rem);
+}
 
 @theme inline {
   --color-background: var(--background);
