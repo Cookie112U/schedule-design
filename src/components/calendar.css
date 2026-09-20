@@ -38,7 +38,7 @@
   }
 
   .week-date {
-    @apply relative grid size-10 cursor-pointer place-items-center rounded-full text-sm outline-none transition-colors hover:bg-accent sm:hidden;
+    @apply relative grid aspect-square w-full max-w-10 cursor-pointer place-items-center rounded-full text-sm outline-none transition-colors hover:bg-accent sm:hidden;
     @apply focus-visible:ring-2 focus-visible:ring-ring;
   }
 
