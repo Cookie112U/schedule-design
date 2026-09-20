@@ -90,7 +90,7 @@ const defaults = {
   lastSelectedByMode: { student: "", teacher: "" },
   selectedDate: toDateKey(today),
   visibleDate: toDateKey(new Date(today.getFullYear(), today.getMonth(), 1)),
-  theme: "light",
+  theme: window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light",
   size: "medium",
   width: "standard",
   output: "bottom",
@@ -376,8 +376,13 @@ function closeSelect() {
 function updateTrigger() {
   const placeholder = state.mode === "student" ? "Выберите группу" : "Выберите преподавателя";
   entityTriggerText.textContent = state.selectedEntity || placeholder;
-  selectedFavorite.textContent = state.selectedEntity && isFavorite(state.selectedEntity) ? "★" : "☆";
+  const favorite = Boolean(state.selectedEntity && isFavorite(state.selectedEntity));
+  selectedFavorite.textContent = favorite ? "★" : "☆";
+  selectedFavorite.classList.toggle("active", favorite);
+  selectedFavorite.setAttribute("aria-label", favorite ? "Убрать из избранного" : "Добавить в избранное");
 }
+
+const checkIconMarkup = '<svg class="select-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5" /></svg>';
 
 function addOption(entity) {
   const star = createElement("button", `favorite-button${isFavorite(entity) ? " active" : ""}`, isFavorite(entity) ? "★" : "☆");
@@ -388,10 +393,15 @@ function addOption(entity) {
     toggleFavorite(entity);
   });
 
-  const button = createElement("button", "select-option");
+  const isSelected = entity === state.selectedEntity;
+  const option = createElement("div", `select-option${isSelected ? " active" : ""}`);
+  option.setAttribute("role", "option");
+  option.setAttribute("aria-selected", String(isSelected));
+
+  const button = createElement("button", "select-option-main");
   button.type = "button";
-  button.classList.toggle("active", entity === state.selectedEntity);
-  button.append(star, createElement("strong", "", entity));
+  button.append(createElement("span", "truncate", entity));
+  if (isSelected) button.insertAdjacentHTML("beforeend", checkIconMarkup);
   button.addEventListener("click", () => {
     state.selectedEntity = entity;
     state.lastSelectedByMode[state.mode] = entity;
@@ -400,7 +410,8 @@ function addOption(entity) {
     updateTrigger();
     closeSelect();
   });
-  entityOptions.append(button);
+  option.append(star, button);
+  entityOptions.append(option);
 }
 
 function addGroupTitle(text) {
@@ -659,32 +670,6 @@ function renderLessons(target, lessons) {
   });
 }
 
-function renderModalLessons(target, lessons) {
-  target.innerHTML = "";
-  target.className = "modal-schedule-list";
-
-  if (!lessons.length) {
-    renderInlineStatus(target, "На выбранную дату расписание не найдено");
-    return;
-  }
-
-  lessons.forEach((lesson) => {
-    const card = createElement("article", "modal-lesson-card");
-    const top = createElement("div", "modal-lesson-top");
-    top.append(
-      createElement("span", "modal-lesson-number", lesson.lesson || "—"),
-      createElement("span", "modal-lesson-time", isLunchLesson(lesson) ? "" : lesson.time),
-      createElement("span", "modal-lesson-side", lessonSideValue(lesson))
-    );
-
-    const bottom = createElement("div", "modal-lesson-bottom");
-    bottom.append(createElement("div", "modal-lesson-subject", lesson.discipline || "Занятие"));
-    bottom.append(createLessonPlace("modal-lesson-place", lesson) || createElement("div", "modal-lesson-place"));
-    card.append(top, bottom);
-    target.append(card);
-  });
-}
-
 function setResultDate(dayTarget, monthTarget) {
   dayTarget.textContent = state.selectedDate.getDate();
   monthTarget.innerHTML = formatDateText(state.selectedDate);
@@ -758,7 +743,7 @@ async function showSchedule() {
         ? `Группа ${state.selectedEntity}`
         : `Преподаватель ${state.selectedEntity}`;
       setModalDateLine(state.selectedDate);
-      renderModalLessons(modalLessonList, lessons);
+      renderLessons(modalLessonList, lessons);
       scheduleModal.showModal();
       return;
     }
@@ -778,7 +763,7 @@ async function showSchedule() {
           ? `Группа ${state.selectedEntity}`
           : `Преподаватель ${state.selectedEntity}`;
         setModalDateLine(state.selectedDate);
-        renderModalLessons(modalLessonList, lessons);
+        renderLessons(modalLessonList, lessons);
         scheduleModal.showModal();
         return;
       }
@@ -805,12 +790,17 @@ function renderColorButtons() {
     button.type = "button";
     button.style.setProperty("--dot", color);
     button.setAttribute("aria-label", `Цвет ${index + 1}`);
+    button.setAttribute("aria-pressed", String(color === state.accent));
     button.addEventListener("click", () => {
       state.accent = color;
       applySettings();
       saveState();
-      colorGrid.querySelectorAll(".color-dot").forEach((item) => item.classList.remove("active"));
+      colorGrid.querySelectorAll(".color-dot").forEach((item) => {
+        item.classList.remove("active");
+        item.setAttribute("aria-pressed", "false");
+      });
       button.classList.add("active");
+      button.setAttribute("aria-pressed", "true");
     });
     colorGrid.append(button);
   });
@@ -837,7 +827,7 @@ function renderBuildingButtons() {
   const buildings = currentBuildings();
 
   if (!apiState.catalogsLoaded) {
-    const button = createElement("button", "setting-pill active", "Загрузка...");
+    const button = createElement("button", "segment active", "Загрузка...");
     button.type = "button";
     button.disabled = true;
     buildingToggle.append(button);
@@ -845,7 +835,7 @@ function renderBuildingButtons() {
   }
 
   if (!buildings.length) {
-    const button = createElement("button", "setting-pill active", "Корпуса не загружены");
+    const button = createElement("button", "segment active", "Корпуса не загружены");
     button.type = "button";
     button.disabled = true;
     buildingToggle.append(button);
@@ -858,7 +848,7 @@ function renderBuildingButtons() {
   }
 
   buildings.forEach((building) => {
-    const button = createElement("button", `setting-pill building-pill${building.number === state.building ? " active" : ""}`);
+    const button = createElement("button", `segment building-pill${building.number === state.building ? " active" : ""}`);
     button.append(createBuildingLabel(building.name || `${building.number} корпус`) || document.createTextNode(building.name || `${building.number} корпус`));
     button.type = "button";
     button.dataset.building = building.number;
@@ -1077,18 +1067,23 @@ function applySettings() {
   app.dataset.size = state.size;
   app.dataset.width = state.width;
   document.documentElement.dataset.theme = state.theme;
+  document.documentElement.classList.toggle("dark", state.theme === "dark");
   document.documentElement.dataset.size = state.size;
   document.documentElement.dataset.width = state.width;
-  document.documentElement.style.setProperty("--accent", state.accent);
-  document.documentElement.style.setProperty("--accent-ink", accentInkFor(state.accent));
+  document.documentElement.style.setProperty("--user-accent", state.accent);
+  document.documentElement.style.setProperty("--user-accent-ink", accentInkFor(state.accent));
   app.dataset.holiday = holiday;
   startHolidayParticles(holiday);
-  document.querySelectorAll("[data-setting]").forEach((button) => {
-    button.classList.toggle("active", state[button.dataset.setting] === button.dataset.value);
+  document.querySelectorAll("[data-setting]").forEach((radio) => {
+    radio.checked = state[radio.dataset.setting] === radio.dataset.value;
   });
   renderBuildingButtons();
   pairSelect.value = state.pair;
-  modeButtons.forEach((button) => button.classList.toggle("active", button.dataset.mode === state.mode));
+  modeButtons.forEach((button) => {
+    const isActive = button.dataset.mode === state.mode;
+    button.classList.toggle("active", isActive);
+    button.setAttribute("aria-pressed", String(isActive));
+  });
   document.querySelectorAll("[data-holiday]").forEach((button) => {
     button.classList.toggle("active", button.dataset.holiday === state.holidayMode);
   });
@@ -1293,10 +1288,10 @@ document.querySelectorAll("[data-close]").forEach((button) => {
   button.addEventListener("click", () => document.querySelector(`#${button.dataset.close}`).close());
 });
 
-document.querySelectorAll("[data-setting]").forEach((button) => {
-  button.addEventListener("click", () => {
-    const setting = button.dataset.setting;
-    state[setting] = button.dataset.value;
+document.querySelectorAll("[data-setting]").forEach((radio) => {
+  radio.addEventListener("change", () => {
+    const setting = radio.dataset.setting;
+    state[setting] = radio.dataset.value;
     if (setting === "output") hideResult();
     applySettings();
     saveState();

@@ -62,7 +62,7 @@
   }
 
   .day-cell {
-    @apply relative grid aspect-square min-w-0 cursor-pointer content-center justify-items-center overflow-hidden rounded-lg border border-transparent text-sm outline-none transition-colors hover:bg-accent;
+    @apply relative grid h-14 min-w-0 cursor-pointer content-center justify-items-center overflow-hidden rounded-lg border border-transparent text-sm outline-none transition-colors hover:bg-accent md:h-16;
     @apply focus-visible:ring-2 focus-visible:ring-ring;
   }
 
