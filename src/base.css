@@ -1,4 +1,13 @@
 @layer base {
+  /* В Tailwind 4 рамка по умолчанию — currentColor; возвращаем токен. */
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--border);
+  }
+
   :root {
     color-scheme: light;
   }

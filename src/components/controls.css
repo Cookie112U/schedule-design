@@ -1,0 +1,179 @@
+/*
+ * Элементы управления в стиле shadcn/ui: Button, Select/Combobox, Tabs,
+ * RadioGroup, native select. Имена классов — точки привязки для app.js
+ * и праздничных оформлений (css/holidays), поэтому они сохранены.
+ */
+@layer components {
+  /* ---------- Button ---------- */
+  .primary-button {
+    @apply btn btn-primary h-11 w-full px-4 font-semibold;
+  }
+
+  .secondary-button {
+    @apply btn btn-outline h-11 w-full px-4;
+  }
+
+  .icon-button {
+    @apply btn btn-outline size-10 p-0;
+  }
+
+  .month-arrow {
+    @apply btn btn-outline size-9 p-0;
+  }
+
+  .plain-icon {
+    @apply btn btn-ghost size-9 p-0;
+  }
+
+  .close-button {
+    @apply btn btn-ghost size-8 shrink-0 p-0 text-muted-foreground;
+  }
+
+  .select-like {
+    @apply btn btn-outline h-10 min-w-44 justify-between px-3;
+  }
+
+  /* ---------- Select (Combobox) ---------- */
+  .custom-select {
+    @apply relative;
+  }
+
+  .select-trigger {
+    @apply field cursor-pointer gap-2 text-left;
+  }
+
+  .select-trigger[aria-expanded="true"] {
+    @apply border-ring;
+  }
+
+  .trigger-star {
+    @apply grid size-7 shrink-0 cursor-pointer place-items-center rounded-sm text-base leading-none text-muted-foreground hover:bg-accent;
+  }
+
+  .trigger-star.active,
+  .favorite-button.active {
+    @apply text-warning;
+  }
+
+  .select-menu {
+    @apply popover absolute inset-x-0 top-full z-50 mt-2 max-h-80 overflow-auto;
+    animation: popover-in 0.12s ease-out;
+  }
+
+  .select-search {
+    @apply sticky top-0 z-10 -mx-1 -mt-1 mb-1 flex h-11 items-center gap-2 border-b bg-popover px-3 text-muted-foreground;
+  }
+
+  .select-search input {
+    @apply h-full w-full bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground;
+  }
+
+  .select-group-title {
+    @apply px-2 pt-2 pb-1 text-xs font-semibold tracking-wide text-muted-foreground uppercase;
+  }
+
+  .select-option {
+    @apply relative flex w-full items-center rounded-sm text-sm hover:bg-accent hover:text-accent-foreground;
+  }
+
+  .select-option.active {
+    @apply bg-accent font-medium;
+  }
+
+  .select-option-main {
+    @apply flex min-h-9 flex-1 cursor-pointer items-center justify-between gap-2 rounded-sm py-1.5 pr-2 pl-1 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring;
+  }
+
+  .select-check {
+    @apply size-4 shrink-0 text-primary;
+  }
+
+  .favorite-button {
+    @apply grid size-8 shrink-0 cursor-pointer place-items-center rounded-sm text-base leading-none text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring;
+  }
+
+  /* ---------- Tabs / Segmented ---------- */
+  .mode-toggle,
+  .segmented {
+    @apply grid min-h-10 grid-cols-2 items-stretch gap-1 rounded-lg bg-muted p-1 text-muted-foreground;
+  }
+
+  .mode-button,
+  .segment {
+    @apply inline-flex min-h-8 cursor-pointer items-center justify-center rounded-md px-3 py-1 text-sm font-medium whitespace-nowrap transition-all outline-none;
+    @apply focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50;
+  }
+
+  .mode-button.active,
+  .segment.active {
+    @apply bg-background text-foreground shadow-sm;
+  }
+
+  .building-toggle {
+    grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
+  }
+
+  .building-label {
+    @apply grid min-w-0 gap-0.5 text-center;
+  }
+
+  .building-name {
+    @apply truncate;
+  }
+
+  .building-address {
+    @apply block truncate text-xs font-normal text-muted-foreground;
+  }
+
+  /* ---------- RadioGroup (карточки, как в форме основного сайта) ---------- */
+  .radio-group {
+    @apply grid gap-2;
+    grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  }
+
+  .radio-card {
+    @apply flex min-h-11 cursor-pointer items-center gap-3 rounded-lg border border-input bg-background px-3 py-2 text-sm font-medium transition-colors hover:bg-accent;
+    @apply has-checked:border-primary has-checked:bg-primary-soft has-checked:text-primary-soft-foreground;
+    @apply has-focus-visible:ring-2 has-focus-visible:ring-ring has-focus-visible:ring-offset-2 has-focus-visible:ring-offset-background;
+  }
+
+  .radio-indicator {
+    @apply relative size-4 shrink-0 rounded-full border border-primary;
+  }
+
+  .radio-indicator::after {
+    content: "";
+    @apply absolute inset-0.5 scale-0 rounded-full bg-primary transition-transform;
+  }
+
+  .radio-card input:checked + .radio-indicator::after {
+    @apply scale-100;
+  }
+
+  /* ---------- Native select ---------- */
+  .native-select {
+    @apply relative;
+  }
+
+  .native-select select {
+    @apply field cursor-pointer appearance-none pr-9;
+  }
+
+  .native-select svg {
+    @apply pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2 text-muted-foreground;
+  }
+
+  /* ---------- Month menu ---------- */
+  .month-menu {
+    @apply popover absolute top-full left-0 z-40 mt-2 grid w-full max-w-sm grid-cols-3 gap-1;
+    animation: popover-in 0.12s ease-out;
+  }
+
+  .month-option {
+    @apply h-9 cursor-pointer rounded-sm text-sm outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring;
+  }
+
+  .month-option.active {
+    @apply bg-primary text-primary-foreground hover:bg-primary-hover;
+  }
+}

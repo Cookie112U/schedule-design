@@ -48,7 +48,7 @@
   --radius: 0.5rem;
 
   --background: var(--color-white);
-  --foreground: var(--color-neutral-900);
+  --foreground: var(--color-neutral-800);
   --card: var(--color-white);
   --card-foreground: var(--color-neutral-900);
   --popover: var(--color-white);
@@ -56,6 +56,11 @@
 
   --primary: var(--user-accent, var(--color-primary-600));
   --primary-foreground: var(--user-accent-ink, var(--color-white));
+  /* Как на основном сайте: hover кнопки — затемнение, чипы и выбранные
+     плитки — мягкая заливка акцентом с тёмным текстом (primary-50/700). */
+  --primary-hover: color-mix(in oklab, var(--primary) 85%, black);
+  --primary-soft: color-mix(in oklab, var(--primary) 10%, transparent);
+  --primary-soft-foreground: color-mix(in oklab, var(--primary) 75%, black);
   --secondary: var(--color-neutral-100);
   --secondary-foreground: var(--color-neutral-800);
   --muted: var(--color-neutral-100);
@@ -86,8 +91,11 @@
   --foreground: var(--color-neutral-100);
   --card: var(--color-neutral-800);
   --card-foreground: var(--color-neutral-100);
-  --popover: var(--color-neutral-800);
+  --popover: var(--color-neutral-900);
   --popover-foreground: var(--color-neutral-100);
+
+  --primary-soft: color-mix(in oklab, var(--primary) 22%, transparent);
+  --primary-soft-foreground: color-mix(in oklab, var(--primary) 55%, white);
 
   --secondary: var(--color-neutral-700);
   --secondary-foreground: var(--color-neutral-100);
@@ -117,6 +125,9 @@
   --color-popover-foreground: var(--popover-foreground);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-soft: var(--primary-soft);
+  --color-primary-soft-foreground: var(--primary-soft-foreground);
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
   --color-muted: var(--muted);

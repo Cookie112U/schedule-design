@@ -15,3 +15,8 @@
 
 @import "./theme.css";
 @import "./base.css";
+@import "./components/primitives.css";
+@import "./components/controls.css";
+@import "./components/calendar.css";
+@import "./components/schedule.css";
+@import "./components/overlays.css";
