@@ -38,9 +38,13 @@ window.ScheduleRequest = (() => {
     return legacyMetaCache.get(dateKey);
   }
 
+  // Список дат меняется (добавляются новые расписания), поэтому кэш живёт только пока
+  // запрос в полёте; TTL и повторные проверки — на стороне schedule-service.
   function legacyDates() {
     if (!legacyDatesPromise) {
-      legacyDatesPromise = api.getLegacyDates().then((dates) => sortDates((Array.isArray(dates) ? dates : []).map(normalizeDateKey))).catch((error) => { legacyDatesPromise = null; throw error; });
+      legacyDatesPromise = api.getLegacyDates()
+        .then((dates) => sortDates((Array.isArray(dates) ? dates : []).map(normalizeDateKey)))
+        .finally(() => { legacyDatesPromise = null; });
     }
     return legacyDatesPromise;
   }

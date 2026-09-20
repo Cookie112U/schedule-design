@@ -1121,7 +1121,7 @@ function applyCatalogs(catalogs) {
   apiState.classrooms = catalogs.classrooms || apiState.classrooms || [];
   apiState.dictionaries = catalogs.dictionaries;
   setScheduleUrl(catalogs.meta?.url || "");
-  apiState.scheduleDates = new Set(catalogs.dates || []);
+  if (catalogs.dates?.length) apiState.scheduleDates = new Set(catalogs.dates);
   apiState.catalogsLoaded = true;
 
   const entities = getEntities();
@@ -1163,6 +1163,21 @@ function applyCatalogs(catalogs) {
   }
 }
 
+// Доступные даты (последние добавленные расписания) берутся из /api/schedule/legacy
+// независимо от справочников выбранной даты: на дату без расписания справочники
+// приходят 404, но календарь всё равно должен показать, где расписание есть.
+async function loadAvailableDates({ force = false } = {}) {
+  try {
+    const dates = await scheduleService.getScheduleDates({ days: 180, force });
+    apiState.scheduleDates = new Set(dates);
+    renderCalendar();
+  } catch (error) {
+    if (error?.status === 404) return;
+    error.publicKey = error.publicKey || "CATALOG_PARTIAL";
+    showMessage(apiErrorText(error, "Не удалось загрузить список дат с расписанием"));
+  }
+}
+
 async function loadCatalogs({ force = false } = {}) {
   const requestId = ++catalogLoadRequestId;
   const dateKey = selectedDateKey();
@@ -1182,6 +1197,7 @@ function handleScheduleDateAdded(dateKey) {
   apiState.scheduleDates.add(dateKey);
   scheduleService.clearDateCache(dateKey);
   renderCalendar();
+  if (dateKey === selectedDateKey()) refreshCatalogsForDate(true);
   showMessage(`Появилось расписание на ${dateKey}`);
 }
 
@@ -1384,5 +1400,6 @@ renderPairOptions();
 updateDownloadButton();
 
 if (!isAuditMode) {
+  loadAvailableDates().then(startScheduleWatcher);
   loadCatalogs();
 }

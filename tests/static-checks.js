@@ -296,6 +296,32 @@ function assertUiClassesAreBuilt() {
   assert(/--user-accent/.test(app) && /classList\.toggle\("dark"/.test(app), "app.js должен выставлять акцент и класс .dark");
 }
 
+async function assertScheduleDatesFetching() {
+  const app = read("js/app.js");
+  assert(/async function loadAvailableDates/.test(app), "список доступных дат должен грузиться отдельно от справочников выбранной даты");
+  assert(/loadAvailableDates\(\)\.then\(startScheduleWatcher\)/.test(app), "даты и наблюдатель должны стартовать сразу, даже если справочники не загрузились");
+  assert(/if \(catalogs\.dates\?\.length\) apiState\.scheduleDates = new Set\(catalogs\.dates\)/.test(app), "пустой ответ каталога не должен затирать загруженные даты");
+
+  // /api/schedule/legacy не кэшируется навсегда: параллельные запросы схлопываются, повторные идут в сеть.
+  let calls = 0;
+  const win = {
+    ScheduleConfig: { apiMode: "legacy" },
+    SchedulePublicApi: {
+      getLegacyDates: () => new Promise((resolve) => setTimeout(() => { calls += 1; resolve(["12.09.2026", "2026-09-08"]); }, 5))
+    }
+  };
+  win.window = win;
+  const sandbox = { console, window: win, setTimeout };
+  vm.createContext(sandbox);
+  vm.runInContext(read("js/modules/schedule-request.js"), sandbox, { filename: "schedule-request.js" });
+  const [first, second] = await Promise.all([win.ScheduleRequest.loadScheduleDates(), win.ScheduleRequest.loadScheduleDates()]);
+  assert.strictEqual(calls, 1, "параллельные запросы списка дат должны схлопываться в один");
+  assert.deepStrictEqual(Array.from(first), ["2026-09-08", "2026-09-12"], "даты нормализуются и сортируются");
+  assert.deepStrictEqual(Array.from(second), Array.from(first));
+  await win.ScheduleRequest.loadScheduleDates();
+  assert.strictEqual(calls, 2, "после завершения запроса новые даты должны запрашиваться заново");
+}
+
 function assertErrorCatalog() {
   const html = read("index.html");
   const catalog = read("js/modules/error-catalog.js");
@@ -332,4 +358,7 @@ assertMobileFirst();
 assertUiClassesAreBuilt();
 assertDownloadAndRoomCacheSupport();
 assertErrorCatalog();
-console.log("Static checks passed");
+assertScheduleDatesFetching().then(() => console.log("Static checks passed"), (error) => {
+  console.error(error);
+  process.exit(1);
+});
