@@ -12,7 +12,7 @@ const monthNames = [
   "июля", "августа", "сентября", "октября", "ноября", "декабря"
 ];
 
-const accentColors = ["#f4ff00", "#ff4d4d", "#3f8cff", "#33c27f", "#ff9f1c", "#b17cff", "#00c2c7", "#ff70b8"];
+const accentColors = ["#2451b8", "#ff4d4d", "#3f8cff", "#33c27f", "#ff9f1c", "#b17cff", "#00c2c7", "#ff70b8"];
 const orangeAccent = "#ff9f1c";
 
 return {

@@ -1,0 +1,98 @@
+/*
+ * Календарь (mobile-first).
+ *  - до sm (640px): неделя — ряд дат-кружков (.week-date), сетка месяца скрыта;
+ *  - от sm: полная сетка месяца (.calendar-grid), в .week-strip остаются
+ *    только названия дней недели.
+ */
+@layer components {
+  .calendar-panel {
+    @apply card min-w-0 p-4 md:p-6;
+  }
+
+  .calendar-toolbar {
+    @apply relative mb-4 flex items-center justify-between gap-2;
+  }
+
+  .mobile-month {
+    @apply flex flex-1 items-center justify-between gap-2 @min-[26rem]:hidden;
+  }
+
+  #mobileMonthTitle {
+    @apply cursor-pointer rounded-lg px-3 py-1.5 font-display text-lg outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring;
+  }
+
+  .calendar-wrap {
+    @apply min-w-0;
+  }
+
+  .week-strip {
+    @apply grid grid-cols-7 gap-1 text-center @min-[26rem]:mb-2;
+  }
+
+  .week-day {
+    @apply grid justify-items-center gap-2 @min-[26rem]:gap-0;
+  }
+
+  .week-day > span {
+    @apply text-xs font-medium tracking-wide text-muted-foreground uppercase;
+  }
+
+  .week-date {
+    @apply relative grid aspect-square w-full max-w-10 cursor-pointer place-items-center rounded-full text-sm outline-none transition-colors hover:bg-accent @min-[26rem]:hidden;
+    @apply focus-visible:ring-2 focus-visible:ring-ring;
+  }
+
+  .week-date.active {
+    @apply bg-primary text-primary-foreground hover:bg-primary-hover;
+  }
+
+  /* Дата с расписанием: кольцо акцентом + точка (видны в обеих темах). */
+  .week-date.has-schedule:not(.active),
+  .day-cell.has-schedule:not(.active) {
+    @apply ring-1 ring-primary/50 ring-inset;
+  }
+
+  .week-date.has-schedule::after,
+  .day-cell.has-schedule::after {
+    content: "";
+    @apply absolute bottom-1.5 left-1/2 size-1.5 -translate-x-1/2 rounded-full bg-primary;
+  }
+
+  .week-date.active.has-schedule::after,
+  .day-cell.active.has-schedule::after {
+    @apply bg-primary-foreground;
+  }
+
+  .calendar-grid {
+    @apply hidden grid-cols-7 gap-1 @min-[26rem]:grid;
+  }
+
+  .day-cell {
+    @apply relative grid h-14 min-w-0 cursor-pointer content-center justify-items-center overflow-hidden rounded-lg border border-transparent text-sm outline-none transition-colors hover:bg-accent @min-[36rem]:h-16;
+    @apply focus-visible:ring-2 focus-visible:ring-ring;
+  }
+
+  .day-cell.study {
+    @apply bg-muted hover:bg-accent;
+  }
+
+  .day-cell.weekend {
+    @apply text-muted-foreground;
+  }
+
+  .day-cell.other-month {
+    @apply text-muted-foreground/50;
+  }
+
+  .day-cell.active {
+    @apply bg-primary font-semibold text-primary-foreground hover:bg-primary-hover;
+  }
+
+  .day-cell strong {
+    @apply block text-base leading-none font-medium @min-[36rem]:text-lg;
+  }
+
+  .day-cell span {
+    @apply mt-1 max-w-full truncate text-[0.65rem] leading-none;
+  }
+}

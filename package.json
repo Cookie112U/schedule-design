@@ -1,0 +1,16 @@
+{
+  "name": "nttek-schedule",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Фронтенд расписания ГАПОУ СО НТТЭК",
+  "scripts": {
+    "dev": "node dev-server.js",
+    "css:build": "tailwindcss -i ./src/app.css -o ./css/app.css --minify",
+    "css:watch": "tailwindcss -i ./src/app.css -o ./css/app.css --watch",
+    "test": "node tests/static-checks.js"
+  },
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.3.3",
+    "tailwindcss": "^4.3.3"
+  }
+}

@@ -1,0 +1,22 @@
+/*
+ * Точка входа Tailwind CSS 4 для расписания.
+ * Сборка: `npm run css:build` -> css/app.css (файл коммитится, чтобы сайт
+ * открывался через любой статический сервер без сборщика).
+ *
+ * `source(none)` + явные @source: не сканируем README, docs и прочий текст,
+ * иначе слова из документации превращаются в лишние утилиты.
+ */
+@import "tailwindcss" source(none);
+@source "../index.html";
+@source "../js";
+
+/* Тёмная тема переключается классом .dark на <html>, как на основном сайте. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+@import "./theme.css";
+@import "./base.css";
+@import "./components/primitives.css";
+@import "./components/controls.css";
+@import "./components/calendar.css";
+@import "./components/schedule.css";
+@import "./components/overlays.css";
