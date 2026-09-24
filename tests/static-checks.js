@@ -111,10 +111,28 @@ function assertRuntimeScheduleFlow() {
   const withoutLunch = win.ScheduleTimeStore.applyTimes([
     { lesson: "11", discipline: "История" }
   ], "2026-09-14");
-  assert.strictEqual(withoutLunch[0].time, "15:40-17:00", "без обеда 5 пара должна сдвигаться на место обеда");
+  assert.strictEqual(withoutLunch[0].time, "15:50-17:10", "без обеда перед следующей парой должна оставаться перемена 10 минут");
+
+  const september23 = win.ScheduleTimeStore.applyTimes([
+    { lesson: "", discipline: "Кл час" },
+    { lesson: "8-9", discipline: "Разработка ПО" },
+    { lesson: "10-11", discipline: "Технология разработки ПО" }
+  ], "2026-09-23");
+  assert.deepStrictEqual(Array.from(september23.map((lesson) => lesson.time)), ["13:40-14:10", "14:20-15:40", "15:50-17:10"]);
+  assert.strictEqual(september23[0].lesson, "Кл. час", "классный час должен определяться по названию");
+
+  const combinedWeekdayLessons = win.ScheduleTimeStore.applyTimes([
+    { lesson: "3-4", discipline: "Право" }
+  ], "2026-09-21");
+  assert.strictEqual(combinedWeekdayLessons[0].time, "10:40-12:00", "диапазон отдельных уроков должен объединять их время");
 
   const saturdaySlots = win.ScheduleTimeStore.getSlots("2026-09-19");
   assert.strictEqual(saturdaySlots.length, 4, "на субботу должны быть только 4 пары без отдельной сетки звонков");
+  const saturdayLessons = win.ScheduleTimeStore.applyTimes([
+    { lesson: "3-4", discipline: "Тест" },
+    { lesson: "8-9", discipline: "Тест" }
+  ], "2026-09-19");
+  assert.deepStrictEqual(Array.from(saturdayLessons.map((lesson) => lesson.time)), ["8:30-10:55", "11:00-13:25"]);
 
   win.ScheduleTimeStore.setDateSlots("2026-09-15", [
     { name: "1 пара", lessons: "1-2 урок", time: "8:00-9:20" }
@@ -159,7 +177,7 @@ function assertRuntimeScheduleFlow() {
     }
   }, "2026-09-14");
   assert.deepStrictEqual(Array.from(teacherLessons.map((lesson) => lesson.lesson)), ["3", "4", "6-7", "8-9", "10-11"]);
-  assert.deepStrictEqual(Array.from(teacherLessons.map((lesson) => lesson.time)), ["10:40-11:20", "11:20-12:00", "12:50-14:10", "14:20-15:40", "15:40-17:00"]);
+  assert.deepStrictEqual(Array.from(teacherLessons.map((lesson) => lesson.time)), ["10:40-11:20", "11:20-12:00", "12:50-14:10", "14:20-15:40", "15:50-17:10"]);
   assert.strictEqual(teacherLessons[0].group, "3ИС6");
   assert.strictEqual(teacherLessons[4].room, "18");
 
@@ -173,6 +191,42 @@ function assertRuntimeScheduleFlow() {
   assert.strictEqual(rooms.length, 1, "legacy all должен создать аудиторию из rooms");
   assert.strictEqual(rooms[0].busy, true);
   assert.strictEqual(rooms[0].lessons[0].group, "3ИС3");
+
+  const splitRooms = win.ScheduleTransform.normalizeClassrooms([{
+    building: { number: "КОРПУС 2" },
+    schedule: [{
+      name: "2Ю12",
+      schedule: [{ lesson: "1-2", name: "Право", teachers: ["Тимерова ОР"], rooms: ["ч-з-18"] }]
+    }]
+  }], "2026-09-23");
+  assert.deepStrictEqual(Array.from(splitRooms.map((room) => room.room)), ["ч-з", "18"]);
+  splitRooms.forEach((room) => {
+    assert.strictEqual(room.busy, true, `${room.room} должна быть занята`);
+    assert.strictEqual(room.lessons[0].teacher, "Тимерова ОР");
+    assert.strictEqual(room.lessons[0].group, "2Ю12");
+  });
+
+  const intactRooms = win.ScheduleTransform.normalizeClassrooms([
+    { room: "лаб 5", busy: true },
+    { room: "25-а", busy: true }
+  ], "2026-09-23");
+  assert.deepStrictEqual(Array.from(intactRooms.map((room) => room.room)), ["лаб 5", "25-а"]);
+
+  const twoRoomLesson = win.ScheduleTransform.toUiLessons([{
+    lesson: "1-2",
+    name: "Информатика",
+    building: { number: "КОРПУС 2", address: "(Садовая, 22)" },
+    rooms: ["ч-з", "18"]
+  }], "2026-09-23")[0];
+  assert.strictEqual(twoRoomLesson.room, "ч-з, 18", "обычное расписание должно показывать оба кабинета");
+  assert.deepStrictEqual(Array.from(twoRoomLesson.rooms), ["ч-з", "18"]);
+
+  const combinedRoomLesson = win.ScheduleTransform.toUiLessons([{
+    lesson: "1-2",
+    name: "Информатика",
+    rooms: ["ч-з-18"]
+  }], "2026-09-23")[0];
+  assert.strictEqual(combinedRoomLesson.room, "ч-з-18", "в обычном расписании исходное название кабинета нельзя дробить");
 }
 function assertJavaScriptSyntax() {
   const files = [...listFiles("js", ".js"), "dev-server.js"];
@@ -296,6 +350,18 @@ function assertUiClassesAreBuilt() {
   assert(/--user-accent/.test(app) && /classList\.toggle\("dark"/.test(app), "app.js должен выставлять акцент и класс .dark");
 }
 
+function assertSettingsDialogScrolling() {
+  const html = read("index.html");
+  const overlays = read("src/components/overlays.css");
+
+  assert(/<div class="settings-scroll">[\s\S]*Вывод расписания[\s\S]*<\/div>\s*<\/form>/.test(html), "все настройки должны находиться в единственной прокручиваемой области");
+  assert(/#settingsModal\s*\{[\s\S]*height:\s*min\(46rem,[\s\S]*overflow:\s*hidden/.test(overlays), "высота и overflow должны задаваться самому dialog");
+  assert(/#settingsModal \.modal-card\s*\{[\s\S]*height:\s*100%;[\s\S]*max-height:\s*none;[\s\S]*overflow:\s*hidden/.test(overlays), "форма настроек не должна иметь собственной прокрутки");
+  assert((overlays.match(/overflow:\s*clip/g) || []).length >= 2, "dialog и form должны блокировать скрытую внешнюю прокрутку");
+  assert(/contain:\s*size layout paint/.test(overlays), "внутренняя прокрутка не должна увеличивать scrollHeight формы");
+  assert(/\.settings-scroll\s*\{[\s\S]*overflow-y-auto/.test(overlays), "прокрутка должна оставаться только у settings-scroll");
+}
+
 async function assertScheduleDatesFetching() {
   const app = read("js/app.js");
   assert(/async function loadAvailableDates/.test(app), "список доступных дат должен грузиться отдельно от справочников выбранной даты");
@@ -356,6 +422,7 @@ assertRuntimeScheduleFlow();
 assertTailwindSetup();
 assertMobileFirst();
 assertUiClassesAreBuilt();
+assertSettingsDialogScrolling();
 assertDownloadAndRoomCacheSupport();
 assertErrorCatalog();
 assertScheduleDatesFetching().then(() => console.log("Static checks passed"), (error) => {

@@ -66,10 +66,10 @@ window.ScheduleTimeStore = (() => {
       { name: "6 пара", lessons: "13-14 урок", time: "16:45-18:05" }
     ],
     saturday: [
-      { name: "1 пара", time: "8:30-10:55" },
-      { name: "2 пара", time: "8:30-10:55" },
-      { name: "3 пара", time: "11:00-13:25" },
-      { name: "4 пара", time: "11:00-13:25" }
+      { name: "1 пара", lessons: "1-2 урок", time: "8:30-10:55" },
+      { name: "2 пара", lessons: "3-4 урок", time: "8:30-10:55" },
+      { name: "3 пара", lessons: "6-7 урок", time: "11:00-13:25" },
+      { name: "4 пара", lessons: "8-9 урок", time: "11:00-13:25" }
     ],
     sunday: []
   };
@@ -162,6 +162,11 @@ window.ScheduleTimeStore = (() => {
     return normalizeComparable(lesson?.discipline || lesson?.name || lesson?.title).includes("обед");
   }
 
+  function isClassHour(value) {
+    const normalized = normalizeComparable(value).replace(/[^а-яa-z]/g, "");
+    return normalized === "клчас" || normalized.includes("классныйчас");
+  }
+
   function dayKeyFromDate(value) {
     const raw = text(value);
     if (dayAliases[normalizeComparable(raw)]) return dayAliases[normalizeComparable(raw)];
@@ -218,7 +223,7 @@ window.ScheduleTimeStore = (() => {
         const shiftedSlot = afterLunch ? shiftSlotLessonNumbers(slot, 1) : slot;
         return {
           ...shiftedSlot,
-          time: lunchDuration && afterLunch ? shiftTimeRange(slot.time, lunchDuration) : slot.time
+          time: lunchDuration && afterLunch ? shiftTimeRange(slot.time, Math.max(0, lunchDuration - 10)) : slot.time
         };
       });
   }
@@ -279,12 +284,16 @@ window.ScheduleTimeStore = (() => {
       return slots.find(isLunchSlot) || null;
     }
 
+    if (isClassHour(lesson?.discipline || lesson?.name || lesson?.lesson)) {
+      return slots.find((slot) => normalizeComparable(slot?.type) === "class-hour" || isClassHour(slot?.label)) || null;
+    }
+
     const lessonNumbers = lessonParts(lesson.lesson || lesson.slotKey || lesson.pair);
     const keys = [lesson.slotKey, lesson.lesson, lesson.pair, lesson.discipline]
       .map(normalizeComparable)
       .filter(Boolean);
 
-    return slots.find((slot) => {
+    const exactSlot = slots.find((slot) => {
       const slotKeys = [slot.value, slot.number, slot.label, slot.pair, slot.displayLesson]
         .map(normalizeComparable)
         .filter(Boolean);
@@ -298,6 +307,24 @@ window.ScheduleTimeStore = (() => {
 
       return slot.lessons.some((number) => lessonNumbers.includes(number));
     }) || null;
+    if (exactSlot || lessonNumbers.length < 2) return exactSlot;
+
+    const firstNumber = lessonNumbers[0];
+    const lastNumber = lessonNumbers[lessonNumbers.length - 1];
+    const firstSlot = slots.find((slot) => slot.lessons.includes(firstNumber));
+    const lastSlot = slots.find((slot) => slot.lessons.includes(lastNumber));
+    if (!firstSlot?.time || !lastSlot?.time) return null;
+
+    const start = text(firstSlot.time).split("-")[0];
+    const end = text(lastSlot.time).split("-")[1];
+    if (!start || !end) return null;
+    return {
+      value: lessonDisplayFromParts(lessonNumbers),
+      label: lessonDisplayFromParts(lessonNumbers),
+      displayLesson: lessonDisplayFromParts(lessonNumbers),
+      lessons: lessonNumbers,
+      time: `${start}-${end}`
+    };
   }
 
   function displayLesson(lesson, slot) {
@@ -306,19 +333,49 @@ window.ScheduleTimeStore = (() => {
     return current || slot.displayLesson || slot.number || slot.label;
   }
 
+  function inferredSlot(lesson, resolved, dayKey) {
+    if (dayKey === "saturday" || dayKey === "sunday") return null;
+    const parts = lessonParts(lesson?.lesson || lesson?.slotKey || lesson?.pair).map(Number);
+    if (!parts.length || parts.some((part) => !Number.isFinite(part))) return null;
+
+    const first = parts[0];
+    const last = parts[parts.length - 1];
+    let anchor = null;
+    resolved.forEach((item) => {
+      const itemParts = lessonParts(item.lesson?.lesson || item.lesson?.slotKey || item.lesson?.pair).map(Number);
+      const end = itemParts[itemParts.length - 1];
+      const endTime = parseMinutes(text(item.slot?.time || item.lesson?.time).split("-")[1]);
+      if (Number.isFinite(end) && end < first && endTime !== null && (!anchor || end > anchor.end)) {
+        anchor = { end, endTime };
+      }
+    });
+    if (!anchor) return null;
+
+    const skippedLessons = Math.max(0, first - anchor.end - 1);
+    const start = anchor.endTime + 10 + skippedLessons * 40;
+    const lessonCount = Math.max(1, last - first + 1);
+    return {
+      value: lessonDisplayFromParts(parts.map(String)),
+      label: lessonDisplayFromParts(parts.map(String)),
+      displayLesson: lessonDisplayFromParts(parts.map(String)),
+      time: `${formatMinutes(start)}-${formatMinutes(start + lessonCount * 40)}`
+    };
+  }
+
   function applyTimes(lessons = [], dateKey) {
     const slots = getSlots(dateKey, lessons);
-    let sequentialIndex = 0;
+    const dayKey = dayKeyFromDate(dateKey);
+    const resolved = [];
 
     return lessons.map((lesson) => {
       const directSlot = findSlotForLesson(lesson, slots);
-      const slot = directSlot || slots[sequentialIndex] || null;
-      if (!directSlot) sequentialIndex += 1;
+      const slot = directSlot || inferredSlot(lesson, resolved, dayKey);
+      resolved.push({ lesson, slot });
       if (!slot?.time || lesson.time) return lesson;
 
       return {
         ...lesson,
-        lesson: displayLesson(lesson, slot),
+        lesson: isClassHour(lesson?.discipline) ? "Кл. час" : displayLesson(lesson, slot),
         time: slot.time,
         pair: lesson.pair || slot.label,
         slotKey: lesson.slotKey || slot.value

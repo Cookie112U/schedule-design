@@ -269,7 +269,7 @@ function roomCacheScope() {
 }
 
 function roomCacheKey(dateKey) {
-  return `${roomCacheScope()}:${dateKey}`;
+  return `rooms-v2:${roomCacheScope()}:${dateKey}`;
 }
 
 function persistRoomCache() {
@@ -1029,10 +1029,6 @@ function appendDetailLine(label, value) {
 }
 
 function showRoomDetail(item) {
-  if (roomsModal.open) {
-    roomsModal.close();
-  }
-
   roomDetailTitle.textContent = `Аудитория ${item.room}`;
   roomDetailContent.className = "room-detail-content";
   roomDetailContent.innerHTML = "";
