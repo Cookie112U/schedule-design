@@ -68,7 +68,7 @@ function assertTimeStore() {
 }
 function assertModuleOrder() {
   const html = read("index.html");
-  const scripts = [...html.matchAll(/<script src="([^"]+)"><\/script>/g)].map((match) => match[1]);
+  const scripts = [...html.matchAll(/<script src="([^"]+)"><\/script>/g)].map((match) => match[1].split("?")[0]);
   const errorCatalogIndex = scripts.indexOf("js/modules/error-catalog.js");
   const apiClientIndex = scripts.indexOf("js/modules/api-client.js");
   const requestIndex = scripts.indexOf("js/modules/schedule-request.js");
@@ -309,7 +309,7 @@ function assertTailwindSetup() {
   assert(pkg.devDependencies && pkg.devDependencies.tailwindcss && pkg.devDependencies["@tailwindcss/cli"], "Tailwind CSS и CLI должны быть в devDependencies");
   assert(/@import "tailwindcss"/.test(entry) && /@source "\.\.\/index\.html"/.test(entry) && /@source "\.\.\/js"/.test(entry), "src/app.css должен подключать Tailwind и явные источники классов");
   assert(/@custom-variant dark \(&:where\(\.dark, \.dark \*\)\)/.test(entry), "тёмная тема должна переключаться классом .dark, как на основном сайте");
-  assert(/<link rel="stylesheet" href="css\/app\.css" \/>/.test(html), "index.html должен подключать собранный css/app.css");
+  assert(/<link rel="stylesheet" href="css\/app\.css\?v=[^"]+" \/>/.test(html), "index.html должен подключать собранный css/app.css с версией кеша");
   assert(!/css\/main\.css|css\/base\//.test(html), "index.html не должен ссылаться на старый CSS");
   assert(!fs.existsSync(path.join(root, "css/main.css")) && !fs.existsSync(path.join(root, "css/base")), "старый css/main.css и css/base должны быть удалены");
   assert(/Merriweather/.test(theme) && /Raleway/.test(theme) && /--color-primary-600:\s*#2451b8/.test(theme), "токены основного сайта (шрифты и палитра) должны быть на месте");
@@ -348,6 +348,18 @@ function assertUiClassesAreBuilt() {
   assert(/type="radio"[^>]*data-setting="theme"/.test(html), "настройки должны быть RadioGroup");
   assert(/addEventListener\("change"/.test(app) && /radio\.dataset\.setting/.test(app), "настройки должны сохранять события через change");
   assert(/--user-accent/.test(app) && /classList\.toggle\("dark"/.test(app), "app.js должен выставлять акцент и класс .dark");
+}
+
+function assertAssetVersions() {
+  const html = read("index.html");
+  const localAssets = [...html.matchAll(/(?:href|src)="((?:css|js)\/[^"]+\.(?:css|js)(?:\?[^"]*)?)"/g)].map((match) => match[1]);
+  assert(localAssets.length > 0, "в index.html должны быть локальные CSS и JS");
+  localAssets.forEach((asset) => {
+    assert(/\?v=\d{4}\.\d{2}\.\d{2}\.\d+$/.test(asset), `${asset}: отсутствует корректная версия кеша`);
+  });
+
+  const versions = new Set(localAssets.map((asset) => asset.split("?v=")[1]));
+  assert.strictEqual(versions.size, 1, "все локальные CSS и JS должны использовать одну версию кеша");
 }
 
 function assertSettingsDialogScrolling() {
@@ -420,6 +432,7 @@ assertModuleOrder();
 assertJavaScriptSyntax();
 assertRuntimeScheduleFlow();
 assertTailwindSetup();
+assertAssetVersions();
 assertMobileFirst();
 assertUiClassesAreBuilt();
 assertSettingsDialogScrolling();
