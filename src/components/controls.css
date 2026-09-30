@@ -118,11 +118,11 @@
   }
 
   .app[data-favorite-side="left"] .select-trigger-row .select-trigger {
-    padding-left: 3.25rem;
+    padding-left: 3rem;
   }
 
   .app[data-favorite-side="left"] .select-trigger-row .trigger-star {
-    left: 0.125rem;
+    left: 0.375rem;
   }
 
   /* ---------- Tabs / Segmented ---------- */
