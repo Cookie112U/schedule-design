@@ -600,9 +600,11 @@ function renderCalendar() {
     const button = createElement("button", [
       "week-date",
       sameDate(date, state.selectedDate) ? "active" : "",
+      sameDate(date, today) ? "today" : "",
       hasScheduleDate(date) ? "has-schedule" : ""
     ].filter(Boolean).join(" "), String(date.getDate()));
     button.type = "button";
+    button.setAttribute("aria-label", `${sameDate(date, today) ? "Сегодня, " : ""}${date.toLocaleDateString("ru-RU", { weekday: "long", day: "numeric", month: "long" })}`);
     button.addEventListener("click", () => selectDate(date));
 
     const item = createElement("div", "week-day");

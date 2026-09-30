@@ -39,11 +39,11 @@
   }
 
   .select-trigger-row {
-    @apply flex items-center gap-2;
+    @apply relative;
   }
 
   .select-trigger-row .select-trigger {
-    @apply min-w-0 flex-1;
+    @apply w-full min-w-0;
   }
 
   .select-trigger {
@@ -55,7 +55,7 @@
   }
 
   .trigger-star {
-    @apply grid size-11 shrink-0 cursor-pointer place-items-center rounded-sm text-base leading-none text-muted-foreground outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring;
+    @apply absolute top-1/2 z-10 grid size-10 -translate-y-1/2 cursor-pointer place-items-center rounded-sm text-base leading-none text-muted-foreground outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring;
   }
 
   .trigger-star.active,
@@ -109,8 +109,20 @@
     @apply pr-1 pl-2;
   }
 
+  .app[data-favorite-side="right"] .select-trigger-row .select-trigger {
+    padding-right: 3.25rem;
+  }
+
+  .app[data-favorite-side="right"] .select-trigger-row .trigger-star {
+    right: 0.125rem;
+  }
+
+  .app[data-favorite-side="left"] .select-trigger-row .select-trigger {
+    padding-left: 3.25rem;
+  }
+
   .app[data-favorite-side="left"] .select-trigger-row .trigger-star {
-    order: -1;
+    left: 0.125rem;
   }
 
   /* ---------- Tabs / Segmented ---------- */

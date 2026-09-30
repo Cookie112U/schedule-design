@@ -46,6 +46,16 @@
     @apply bg-primary text-primary-foreground hover:bg-primary-hover;
   }
 
+  /* Верхняя точка отмечает сегодня, нижняя остается индикатором расписания. */
+  .week-date.today::before {
+    content: "";
+    @apply absolute top-0.5 right-0.5 size-2 rounded-full bg-primary ring-2 ring-card;
+  }
+
+  .week-date.today.active::before {
+    @apply bg-primary-foreground ring-primary;
+  }
+
   /* Дата с расписанием: кольцо акцентом + точка (видны в обеих темах). */
   .week-date.has-schedule:not(.active),
   .day-cell.has-schedule:not(.active) {

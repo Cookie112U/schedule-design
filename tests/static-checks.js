@@ -395,6 +395,11 @@ function assertIosCompatibility() {
   assert(!/=> settingsModal\.showModal\(\)/.test(app), "UI must not call showModal directly");
   assert(/isDialogOpen\(roomsModal\)/.test(app), "fallback dialogs must be recognized as open");
   assert(/<button class="trigger-star" id="selectedFavorite" type="button"/.test(html), "favorite control must be a native keyboard-accessible button");
+  assert(/\.select-trigger-row\s*\{[\s\S]*@apply relative/.test(controls), "favorite button must be positioned inside the select field");
+  assert(/data-favorite-side="right"[\s\S]*\.trigger-star\s*\{[\s\S]*right:/.test(controls), "right favorite position must remain inside the field");
+  assert(/data-favorite-side="left"[\s\S]*\.trigger-star\s*\{[\s\S]*left:/.test(controls), "left favorite position must remain inside the field");
+  assert(/sameDate\(date, today\) \? "today"/.test(app), "weekly calendar must mark today without adding text");
+  assert(/\.week-date\.today::before/.test(read("src/components/calendar.css")), "weekly today marker must have a compact visual indicator");
   assert(/safe-area-inset-(top|bottom)/.test(read("src/theme.css")), "safe-area tokens must be defined");
   assert(/html\.dialog-lock/.test(base), "background scrolling must be locked while a dialog is open");
   assert(/font-size:\s*max\(1rem, 16px\)/.test(controls), "search input must not trigger Safari auto zoom");
