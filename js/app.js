@@ -602,8 +602,9 @@ function renderCalendar() {
       sameDate(date, state.selectedDate) ? "active" : "",
       sameDate(date, today) ? "today" : "",
       hasScheduleDate(date) ? "has-schedule" : ""
-    ].filter(Boolean).join(" "), String(date.getDate()));
+    ].filter(Boolean).join(" "));
     button.type = "button";
+    button.append(createElement("span", "date-number", String(date.getDate())));
     button.setAttribute("aria-label", `${sameDate(date, today) ? "Сегодня, " : ""}${date.toLocaleDateString("ru-RU", { weekday: "long", day: "numeric", month: "long" })}`);
     button.addEventListener("click", () => selectDate(date));
 
