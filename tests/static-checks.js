@@ -399,7 +399,10 @@ function assertIosCompatibility() {
   assert(/data-favorite-side="right"[\s\S]*\.trigger-star\s*\{[\s\S]*right:/.test(controls), "right favorite position must remain inside the field");
   assert(/data-favorite-side="left"[\s\S]*\.trigger-star\s*\{[\s\S]*left:/.test(controls), "left favorite position must remain inside the field");
   assert(/sameDate\(date, today\) \? "today"/.test(app), "weekly calendar must mark today without adding text");
-  assert(/\.week-date\.today::before/.test(read("src/components/calendar.css")), "weekly today marker must have a compact visual indicator");
+  const calendar = read("src/components/calendar.css");
+  assert(/\.week-date\.today:not\(\.active\)/.test(calendar), "weekly today marker must use a non-overlapping circle accent");
+  assert(/\.week-date\.today\.active/.test(calendar), "selected today must remain visually distinct");
+  assert(!/\.week-date\.today::before/.test(calendar), "weekly today marker must not cover the date with a corner dot");
   assert(/safe-area-inset-(top|bottom)/.test(read("src/theme.css")), "safe-area tokens must be defined");
   assert(/html\.dialog-lock/.test(base), "background scrolling must be locked while a dialog is open");
   assert(/font-size:\s*max\(1rem, 16px\)/.test(controls), "search input must not trigger Safari auto zoom");
