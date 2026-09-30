@@ -83,6 +83,10 @@
     @apply text-sm font-medium;
   }
 
+  .setting-hint {
+    @apply text-xs leading-snug text-muted-foreground;
+  }
+
   .color-grid {
     @apply grid grid-cols-4 gap-3 sm:grid-cols-8;
   }

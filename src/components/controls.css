@@ -92,6 +92,18 @@
     @apply grid size-8 shrink-0 cursor-pointer place-items-center rounded-sm text-base leading-none text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring;
   }
 
+  .app[data-favorite-side="right"] .select-option .favorite-button {
+    order: 2;
+  }
+
+  .app[data-favorite-side="right"] .select-option-main {
+    @apply pr-1 pl-2;
+  }
+
+  .app[data-favorite-side="left"] .trigger-star {
+    order: -1;
+  }
+
   /* ---------- Tabs / Segmented ---------- */
   .mode-toggle,
   .segmented {

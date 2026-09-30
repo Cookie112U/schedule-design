@@ -94,6 +94,7 @@ const defaults = {
   size: "medium",
   width: "standard",
   output: "bottom",
+  favoriteSide: "right",
   accent: accentColors[0],
   building: "",
   pair: "",
@@ -131,6 +132,10 @@ const availableWidths = new Set(["compact", "standard", "full"]);
 if (!availableWidths.has(state.width)) {
   state.width = defaults.width;
 }
+const availableFavoriteSides = new Set(["left", "right"]);
+if (!availableFavoriteSides.has(state.favoriteSide)) {
+  state.favoriteSide = defaults.favoriteSide;
+}
 
 let scheduleWatcherErrorShown = false;
 let stopScheduleWatcher = null;
@@ -138,6 +143,7 @@ let catalogLoadRequestId = 0;
 let roomsLoadRequestId = 0;
 let catalogRefreshTimer = 0;
 let roomsRefreshTimer = 0;
+let pendingFavoriteRemoval = { key: "", until: 0 };
 
 function saveState() {
   writeSavedState({
@@ -150,6 +156,7 @@ function saveState() {
     size: state.size,
     width: state.width,
     output: state.output,
+    favoriteSide: state.favoriteSide,
     accent: state.accent,
     building: state.building,
     pair: state.pair,
@@ -346,6 +353,13 @@ function chooseAvailableEntity(entities) {
 function toggleFavorite(entity, mode = state.mode) {
   const key = favoriteKey(entity, mode);
   if (isFavorite(entity, mode)) {
+    const now = Date.now();
+    if (pendingFavoriteRemoval.key !== key || pendingFavoriteRemoval.until < now) {
+      pendingFavoriteRemoval = { key, until: now + 3000 };
+      showMessage("Нажмите звезду ещё раз, чтобы убрать из избранного");
+      return;
+    }
+    pendingFavoriteRemoval = { key: "", until: 0 };
     state.favorites = state.favorites.filter((item) => item !== key);
   } else {
     const sameMode = state.favorites
@@ -1062,6 +1076,7 @@ function applySettings() {
   app.dataset.theme = state.theme;
   app.dataset.size = state.size;
   app.dataset.width = state.width;
+  app.dataset.favoriteSide = state.favoriteSide;
   document.documentElement.dataset.theme = state.theme;
   document.documentElement.classList.toggle("dark", state.theme === "dark");
   document.documentElement.dataset.size = state.size;

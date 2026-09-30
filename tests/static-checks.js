@@ -281,6 +281,9 @@ function assertCurrentUxRequirements() {
   assert(/const maxFavorites = 18;/.test(app), "favorites list must be limited to 18 items");
   assert(/\.slice\(0, maxFavorites\)/.test(app), "rendered favorites must be capped");
   assert(!/!favorites\.includes\(entity\)/.test(app), "favorite entities must remain in the main list");
+  assert(/data-setting="favoriteSide" data-value="left"/.test(html) && /data-setting="favoriteSide" data-value="right"/.test(html), "settings must allow choosing the favorite star side");
+  assert(/pendingFavoriteRemoval\.until < now/.test(app), "favorite removal must require a second deliberate click");
+  assert(/app\.dataset\.favoriteSide = state\.favoriteSide/.test(app), "favorite side must be applied to the interface");
 
   assert(/function legacyBuildingLabel/.test(request), "legacy group headings must include building label helper");
   assert(/legacyBuildingLabel\(buildings\[index\], index\)/.test(request), "legacy groups must use building labels with addresses");
