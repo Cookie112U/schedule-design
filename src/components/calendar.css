@@ -95,4 +95,62 @@
   .day-cell span {
     @apply mt-1 max-w-full truncate text-[0.65rem] leading-none;
   }
+
+  /* Пользовательский выбор действует только на телефонах; планшеты и ПК остаются адаптивными. */
+  @container (width <= 450px) {
+    .app[data-mobile-calendar-view="week"] .mobile-month {
+      display: flex;
+    }
+
+    .app[data-mobile-calendar-view="week"] .desktop-month-select,
+    .app[data-mobile-calendar-view="week"] .month-navigation,
+    .app[data-mobile-calendar-view="week"] .calendar-grid {
+      display: none;
+    }
+
+    .app[data-mobile-calendar-view="week"] .week-date {
+      display: grid;
+    }
+
+    .app[data-mobile-calendar-view="month"] .mobile-month,
+    .app[data-mobile-calendar-view="month"] .week-date {
+      display: none;
+    }
+
+    .app[data-mobile-calendar-view="month"] .desktop-month-select {
+      display: inline-flex;
+    }
+
+    .app[data-mobile-calendar-view="month"] .month-navigation,
+    .app[data-mobile-calendar-view="month"] .calendar-grid {
+      display: grid;
+    }
+
+    .app[data-mobile-calendar-view="month"] .month-navigation {
+      grid-template-columns: repeat(2, auto);
+    }
+
+    .app[data-mobile-calendar-view="month"] .day-cell {
+      height: clamp(2.5rem, 12vw, 3.5rem);
+    }
+  }
+
+  @container (width > 450px) {
+    .mobile-month,
+    .week-date {
+      display: none;
+    }
+
+    .desktop-month-select {
+      display: inline-flex;
+    }
+
+    .month-navigation {
+      display: flex;
+    }
+
+    .calendar-grid {
+      display: grid;
+    }
+  }
 }

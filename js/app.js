@@ -95,6 +95,7 @@ const defaults = {
   width: "standard",
   output: "bottom",
   favoriteSide: "right",
+  mobileCalendarView: "week",
   accent: accentColors[0],
   building: "",
   pair: "",
@@ -136,6 +137,10 @@ const availableFavoriteSides = new Set(["left", "right"]);
 if (!availableFavoriteSides.has(state.favoriteSide)) {
   state.favoriteSide = defaults.favoriteSide;
 }
+const availableMobileCalendarViews = new Set(["week", "month"]);
+if (!availableMobileCalendarViews.has(state.mobileCalendarView)) {
+  state.mobileCalendarView = defaults.mobileCalendarView;
+}
 
 let scheduleWatcherErrorShown = false;
 let stopScheduleWatcher = null;
@@ -157,6 +162,7 @@ function saveState() {
     width: state.width,
     output: state.output,
     favoriteSide: state.favoriteSide,
+    mobileCalendarView: state.mobileCalendarView,
     accent: state.accent,
     building: state.building,
     pair: state.pair,
@@ -1077,6 +1083,7 @@ function applySettings() {
   app.dataset.size = state.size;
   app.dataset.width = state.width;
   app.dataset.favoriteSide = state.favoriteSide;
+  app.dataset.mobileCalendarView = state.mobileCalendarView;
   document.documentElement.dataset.theme = state.theme;
   document.documentElement.classList.toggle("dark", state.theme === "dark");
   document.documentElement.dataset.size = state.size;

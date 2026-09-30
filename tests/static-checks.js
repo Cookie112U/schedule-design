@@ -284,6 +284,10 @@ function assertCurrentUxRequirements() {
   assert(/data-setting="favoriteSide" data-value="left"/.test(html) && /data-setting="favoriteSide" data-value="right"/.test(html), "settings must allow choosing the favorite star side");
   assert(/pendingFavoriteRemoval\.until < now/.test(app), "favorite removal must require a second deliberate click");
   assert(/app\.dataset\.favoriteSide = state\.favoriteSide/.test(app), "favorite side must be applied to the interface");
+  assert(/data-setting="mobileCalendarView" data-value="week"/.test(html) && /data-setting="mobileCalendarView" data-value="month"/.test(html), "settings must allow choosing the mobile calendar view");
+  assert(/app\.dataset\.mobileCalendarView = state\.mobileCalendarView/.test(app), "mobile calendar view must be applied and persisted");
+  assert(/@container \(width <= 450px\)/.test(calendar), "mobile calendar preference must be limited to phone widths");
+  assert(/@container \(width > 450px\)/.test(calendar), "screens wider than a phone must always use the full calendar");
 
   assert(/function legacyBuildingLabel/.test(request), "legacy group headings must include building label helper");
   assert(/legacyBuildingLabel\(buildings\[index\], index\)/.test(request), "legacy groups must use building labels with addresses");
