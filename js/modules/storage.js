@@ -11,7 +11,12 @@ function readSavedState() {
 }
 
 function writeSavedState(state) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function readRoomCache() {
@@ -23,7 +28,12 @@ function readRoomCache() {
 }
 
 function writeRoomCache(cache) {
-  localStorage.setItem(ROOM_CACHE_KEY, JSON.stringify(cache));
+  try {
+    localStorage.setItem(ROOM_CACHE_KEY, JSON.stringify(cache));
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 return {

@@ -38,6 +38,14 @@
     @apply relative;
   }
 
+  .select-trigger-row {
+    @apply flex items-center gap-2;
+  }
+
+  .select-trigger-row .select-trigger {
+    @apply min-w-0 flex-1;
+  }
+
   .select-trigger {
     @apply field cursor-pointer gap-2 text-left;
   }
@@ -47,7 +55,7 @@
   }
 
   .trigger-star {
-    @apply grid size-7 shrink-0 cursor-pointer place-items-center rounded-sm text-base leading-none text-muted-foreground hover:bg-accent;
+    @apply grid size-11 shrink-0 cursor-pointer place-items-center rounded-sm text-base leading-none text-muted-foreground outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring;
   }
 
   .trigger-star.active,
@@ -66,6 +74,7 @@
 
   .select-search input {
     @apply h-full w-full bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground;
+    font-size: max(1rem, 16px);
   }
 
   .select-group-title {
@@ -89,7 +98,7 @@
   }
 
   .favorite-button {
-    @apply grid size-8 shrink-0 cursor-pointer place-items-center rounded-sm text-base leading-none text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring;
+    @apply grid size-11 shrink-0 cursor-pointer place-items-center rounded-sm text-base leading-none text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring;
   }
 
   .app[data-favorite-side="right"] .select-option .favorite-button {
@@ -100,7 +109,7 @@
     @apply pr-1 pl-2;
   }
 
-  .app[data-favorite-side="left"] .trigger-star {
+  .app[data-favorite-side="left"] .select-trigger-row .trigger-star {
     order: -1;
   }
 

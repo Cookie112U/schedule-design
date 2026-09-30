@@ -8,8 +8,8 @@
     @apply overflow-hidden rounded-xl border bg-background p-0 text-foreground shadow-lg;
     width: var(--modal-narrow);
     max-width: none;
-    max-height: calc(100vh - 1.5rem);
-    max-height: calc(100dvh - 1.5rem);
+    max-height: calc(100vh - 1.5rem - var(--safe-top) - var(--safe-bottom));
+    max-height: calc(100dvh - 1.5rem - var(--safe-top) - var(--safe-bottom));
   }
 
   .modal[open] {
@@ -27,8 +27,8 @@
 
   .modal-card {
     @apply flex flex-col gap-4 overflow-y-auto p-4 sm:p-6;
-    max-height: calc(100vh - 1.5rem);
-    max-height: calc(100dvh - 1.5rem);
+    max-height: calc(100vh - 1.5rem - var(--safe-top) - var(--safe-bottom));
+    max-height: calc(100dvh - 1.5rem - var(--safe-top) - var(--safe-bottom));
   }
 
   .modal-head {
@@ -45,8 +45,8 @@
 
   /* ---------- Настройки ---------- */
   #settingsModal {
-    height: min(46rem, calc(100vh - 1.5rem));
-    height: min(46rem, calc(100dvh - 1.5rem));
+    height: min(46rem, calc(100vh - 1.5rem - var(--safe-top) - var(--safe-bottom)));
+    height: min(46rem, calc(100dvh - 1.5rem - var(--safe-top) - var(--safe-bottom)));
     overflow: hidden;
     overflow: clip;
     overscroll-behavior: none;
@@ -73,6 +73,23 @@
     overscroll-behavior: contain;
     scrollbar-gutter: stable;
     -webkit-overflow-scrolling: touch;
+  }
+
+  .modal.dialog-fallback-open {
+    position: fixed;
+    inset: 50% auto auto 50%;
+    z-index: 70;
+    display: block;
+    transform: translate(-50%, -50%);
+    animation: none;
+  }
+
+  html.dialog-fallback-lock body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 69;
+    background: rgb(0 0 0 / 60%);
   }
 
   .settings-group {
@@ -116,6 +133,7 @@
   /* ---------- Toast ---------- */
   .toast-stack {
     @apply pointer-events-none fixed inset-x-3 bottom-3 z-[60] grid content-end gap-2 sm:inset-x-auto sm:right-6 sm:bottom-6 sm:w-96;
+    bottom: max(0.75rem, var(--safe-bottom));
   }
 
   .toast {

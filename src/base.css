@@ -21,6 +21,17 @@
     @apply bg-background font-sans text-foreground antialiased lining-nums;
   }
 
+  .app {
+    padding-right: var(--safe-right);
+    padding-left: var(--safe-left);
+  }
+
+  html.dialog-lock,
+  html.dialog-lock body {
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+
   /* Preflight Tailwind 4 обнуляет margin у <dialog> и ломает центрирование. */
   dialog {
     margin: auto;

@@ -334,7 +334,7 @@ function assertMobileFirst() {
   assert(/\.week-date \{[^}]*@min-\[26rem\]:hidden/.test(calendar), "кружки дат недели показываются на телефоне и скрываются с sm");
   assert(/\.mobile-month \{[^}]*@min-\[26rem\]:hidden/.test(calendar), "переключатель недели показывается только на телефоне");
   assert(/grid-cols-\[minmax\(0,1fr\)\][^"]*@min-\[48rem\]:grid-cols-\[minmax\(0,1fr\)_21rem\]/.test(html), "макет: одна колонка на телефоне, две — по контейнерному запросу");
-  assert(/<meta name="viewport" content="width=device-width, initial-scale=1\.0" \/>/.test(html), "viewport должен быть задан");
+  assert(/<meta name="viewport" content="width=device-width, initial-scale=1\.0, viewport-fit=cover" \/>/.test(html), "viewport должен учитывать iPhone safe-area");
 }
 
 function assertUiClassesAreBuilt() {
@@ -379,6 +379,43 @@ function assertSettingsDialogScrolling() {
   assert((overlays.match(/overflow:\s*clip/g) || []).length >= 2, "dialog и form должны блокировать скрытую внешнюю прокрутку");
   assert(/contain:\s*size layout paint/.test(overlays), "внутренняя прокрутка не должна увеличивать scrollHeight формы");
   assert(/\.settings-scroll\s*\{[\s\S]*overflow-y-auto/.test(overlays), "прокрутка должна оставаться только у settings-scroll");
+}
+
+function assertIosCompatibility() {
+  const html = read("index.html");
+  const app = read("js/app.js");
+  const base = read("src/base.css");
+  const controls = read("src/components/controls.css");
+  const overlays = read("src/components/overlays.css");
+
+  assert(/viewport-fit=cover/.test(html), "iPhone safe-area requires viewport-fit=cover");
+  assert(/function openDialog/.test(app) && /dialog-fallback-open/.test(app), "dialogs need a fallback for older Safari");
+  assert(/function openDialogFallback/.test(app) && /aria-modal/.test(app), "fallback dialogs must expose modal semantics");
+  assert(/event\.key !== "Tab"/.test(app) && /event\.key === "Escape"/.test(app), "fallback dialogs must manage keyboard focus");
+  assert(!/=> settingsModal\.showModal\(\)/.test(app), "UI must not call showModal directly");
+  assert(/isDialogOpen\(roomsModal\)/.test(app), "fallback dialogs must be recognized as open");
+  assert(/<button class="trigger-star" id="selectedFavorite" type="button"/.test(html), "favorite control must be a native keyboard-accessible button");
+  assert(/safe-area-inset-(top|bottom)/.test(read("src/theme.css")), "safe-area tokens must be defined");
+  assert(/html\.dialog-lock/.test(base), "background scrolling must be locked while a dialog is open");
+  assert(/font-size:\s*max\(1rem, 16px\)/.test(controls), "search input must not trigger Safari auto zoom");
+  assert(/dialog-fallback-open/.test(overlays), "Safari dialog fallback must be styled");
+  assert(/function writeSavedState[\s\S]*try[\s\S]*localStorage\.setItem/.test(read("js/modules/storage.js")), "Safari storage writes must not crash the app");
+}
+
+function assertStorageFailureFallback() {
+  const win = {};
+  const sandbox = {
+    window: win,
+    localStorage: {
+      getItem: () => null,
+      setItem: () => { throw new Error("storage denied"); }
+    }
+  };
+  win.window = win;
+  vm.createContext(sandbox);
+  vm.runInContext(read("js/modules/storage.js"), sandbox, { filename: "storage.js" });
+  assert.strictEqual(win.ScheduleStorage.writeSavedState({ theme: "dark" }), false);
+  assert.strictEqual(win.ScheduleStorage.writeRoomCache({}), false);
 }
 
 async function assertScheduleDatesFetching() {
@@ -443,6 +480,8 @@ assertAssetVersions();
 assertMobileFirst();
 assertUiClassesAreBuilt();
 assertSettingsDialogScrolling();
+assertIosCompatibility();
+assertStorageFailureFallback();
 assertDownloadAndRoomCacheSupport();
 assertErrorCatalog();
 assertScheduleDatesFetching().then(() => console.log("Static checks passed"), (error) => {

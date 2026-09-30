@@ -61,6 +61,7 @@ const roomDetailTitle = document.querySelector("#roomDetailTitle");
 const roomDetailContent = document.querySelector("#roomDetailContent");
 const holidayAdminButton = document.querySelector("#holidayAdminButton");
 const holidayAdminModal = document.querySelector("#holidayAdminModal");
+const dialogs = Array.from(document.querySelectorAll("dialog.modal"));
 
 const today = new Date();
 today.setHours(0, 0, 0, 0);
@@ -83,6 +84,75 @@ const apiState = {
   scheduleUrl: "",
   catalogsLoaded: false
 };
+
+function isDialogOpen(dialog) {
+  return Boolean(dialog && (dialog.open || dialog.hasAttribute("open")));
+}
+
+function syncDialogLock() {
+  document.documentElement.classList.toggle("dialog-lock", dialogs.some(isDialogOpen));
+  document.documentElement.classList.toggle("dialog-fallback-lock", dialogs.some((dialog) => dialog.classList.contains("dialog-fallback-open")));
+}
+
+function openDialogFallback(dialog) {
+  dialog.setAttribute("open", "");
+  dialog.setAttribute("aria-modal", "true");
+  dialog.classList.add("dialog-fallback-open");
+  window.requestAnimationFrame(() => {
+    dialog.querySelector("button, input, select, [tabindex]:not([tabindex='-1'])")?.focus();
+  });
+}
+
+function openDialog(dialog) {
+  if (!dialog || isDialogOpen(dialog)) return;
+  try {
+    if (typeof dialog.showModal === "function") {
+      dialog.showModal();
+    } else {
+      openDialogFallback(dialog);
+    }
+  } catch {
+    openDialogFallback(dialog);
+  }
+  syncDialogLock();
+}
+
+function closeDialog(dialog) {
+  if (!dialog || !isDialogOpen(dialog)) return;
+  if (typeof dialog.close === "function" && !dialog.classList.contains("dialog-fallback-open")) {
+    dialog.close();
+  } else {
+    dialog.removeAttribute("open");
+    dialog.removeAttribute("aria-modal");
+    dialog.classList.remove("dialog-fallback-open");
+  }
+  syncDialogLock();
+}
+
+dialogs.forEach((dialog) => {
+  dialog.addEventListener("close", syncDialogLock);
+  dialog.addEventListener("cancel", () => window.setTimeout(syncDialogLock, 0));
+  dialog.addEventListener("keydown", (event) => {
+    if (!dialog.classList.contains("dialog-fallback-open")) return;
+    if (event.key === "Escape") {
+      event.preventDefault();
+      closeDialog(dialog);
+      return;
+    }
+    if (event.key !== "Tab") return;
+    const focusable = Array.from(dialog.querySelectorAll("button:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex='-1'])"));
+    if (!focusable.length) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  });
+});
 
 const defaults = {
   mode: "student",
@@ -504,7 +574,7 @@ function resetTimeSlotsForDate() {
 }
 
 function refreshRoomsIfOpen(force = false) {
-  if (!roomsModal.open) return;
+  if (!isDialogOpen(roomsModal)) return;
   window.clearTimeout(roomsRefreshTimer);
   roomsRefreshTimer = window.setTimeout(() => renderRooms({ force }), 60);
 }
@@ -764,7 +834,7 @@ async function showSchedule() {
         : `Преподаватель ${state.selectedEntity}`;
       setModalDateLine(state.selectedDate);
       renderLessons(modalLessonList, lessons);
-      scheduleModal.showModal();
+      openDialog(scheduleModal);
       return;
     }
 
@@ -784,7 +854,7 @@ async function showSchedule() {
           : `Преподаватель ${state.selectedEntity}`;
         setModalDateLine(state.selectedDate);
         renderLessons(modalLessonList, lessons);
-        scheduleModal.showModal();
+        openDialog(scheduleModal);
         return;
       }
 
@@ -1074,7 +1144,7 @@ function showRoomDetail(item) {
     roomDetailContent.append(createElement("p", "", "На выбранной паре аудитория свободна."));
   }
 
-  roomDetailModal.showModal();
+  openDialog(roomDetailModal);
 }
 
 function applySettings() {
@@ -1317,15 +1387,15 @@ downloadScheduleButton.addEventListener("click", () => {
   }
   window.open(apiState.scheduleUrl, "_blank", "noopener");
 });
-settingsButton.addEventListener("click", () => settingsModal.showModal());
+settingsButton.addEventListener("click", () => openDialog(settingsModal));
 roomsButton.addEventListener("click", () => {
-  roomsModal.showModal();
+  openDialog(roomsModal);
   renderRooms();
 });
-holidayAdminButton.addEventListener("click", () => holidayAdminModal.showModal());
+holidayAdminButton.addEventListener("click", () => openDialog(holidayAdminModal));
 
 document.querySelectorAll("[data-close]").forEach((button) => {
-  button.addEventListener("click", () => document.querySelector(`#${button.dataset.close}`).close());
+  button.addEventListener("click", () => closeDialog(document.querySelector(`#${button.dataset.close}`)));
 });
 
 document.querySelectorAll("[data-setting]").forEach((radio) => {
@@ -1344,13 +1414,13 @@ buildingToggle.addEventListener("click", (event) => {
   state.building = button.dataset.building;
   applySettings();
   saveState();
-  if (roomsModal.open) renderRooms();
+  if (isDialogOpen(roomsModal)) renderRooms();
 });
 
 pairSelect.addEventListener("change", (event) => {
   state.pair = event.target.value;
   saveState();
-  if (roomsModal.open) renderRooms();
+  if (isDialogOpen(roomsModal)) renderRooms();
 });
 
 document.querySelectorAll("[data-holiday]").forEach((button) => {

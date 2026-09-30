@@ -2,7 +2,7 @@
 <html lang="ru" data-size="medium" data-width="standard">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>Расписание НТТЭК</title>
     <link rel="icon" type="image/png" href="Img/logo_small.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -24,16 +24,16 @@
       })();
     </script>
     <!-- Повышайте версию одновременно у всех локальных CSS и JS после релиза. -->
-    <link rel="stylesheet" href="css/app.css?v=2026.09.30.2" />
-    <link rel="stylesheet" href="css/holidays/new-year.css?v=2026.09.30.2" />
-    <link rel="stylesheet" href="css/holidays/russia-day.css?v=2026.09.30.2" />
-    <link rel="stylesheet" href="css/holidays/easter.css?v=2026.09.30.2" />
-    <link rel="stylesheet" href="css/holidays/september.css?v=2026.09.30.2" />
-    <link rel="stylesheet" href="css/holidays/march-8.css?v=2026.09.30.2" />
-    <link rel="stylesheet" href="css/holidays/february-23.css?v=2026.09.30.2" />
-    <link rel="stylesheet" href="css/holidays/victory-day.css?v=2026.09.30.2" />
-    <link rel="stylesheet" href="css/holidays/holiday-numbers.css?v=2026.09.30.2" />
-    <link rel="stylesheet" href="css/holidays/holiday-buttons.css?v=2026.09.30.2" />
+    <link rel="stylesheet" href="css/app.css?v=2026.09.30.3" />
+    <link rel="stylesheet" href="css/holidays/new-year.css?v=2026.09.30.3" />
+    <link rel="stylesheet" href="css/holidays/russia-day.css?v=2026.09.30.3" />
+    <link rel="stylesheet" href="css/holidays/easter.css?v=2026.09.30.3" />
+    <link rel="stylesheet" href="css/holidays/september.css?v=2026.09.30.3" />
+    <link rel="stylesheet" href="css/holidays/march-8.css?v=2026.09.30.3" />
+    <link rel="stylesheet" href="css/holidays/february-23.css?v=2026.09.30.3" />
+    <link rel="stylesheet" href="css/holidays/victory-day.css?v=2026.09.30.3" />
+    <link rel="stylesheet" href="css/holidays/holiday-numbers.css?v=2026.09.30.3" />
+    <link rel="stylesheet" href="css/holidays/holiday-buttons.css?v=2026.09.30.3" />
   </head>
   <body>
     <div class="app relative min-h-screen overflow-x-clip" data-theme="light" data-size="medium" data-width="standard">
@@ -127,12 +127,14 @@
           </div>
 
           <div class="custom-select" id="entitySelectRoot">
-            <button class="select-trigger" type="button" id="entityTrigger" aria-haspopup="listbox" aria-expanded="false">
-              <svg class="size-4 shrink-0 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></svg>
-              <span class="min-w-0 flex-1 truncate" id="entityTriggerText">Выберите группу</span>
-              <span class="trigger-star" id="selectedFavorite" role="button" aria-label="Добавить в избранное">☆</span>
-              <svg class="chevron size-4 shrink-0 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
-            </button>
+            <div class="select-trigger-row">
+              <button class="select-trigger" type="button" id="entityTrigger" aria-haspopup="listbox" aria-expanded="false">
+                <svg class="size-4 shrink-0 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></svg>
+                <span class="min-w-0 flex-1 truncate" id="entityTriggerText">Выберите группу</span>
+                <svg class="chevron size-4 shrink-0 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+              </button>
+              <button class="trigger-star" id="selectedFavorite" type="button" aria-label="Добавить в избранное">☆</button>
+            </div>
             <div class="select-menu" id="entityMenu" hidden>
               <label class="select-search">
                 <svg class="size-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></svg>
@@ -166,7 +168,7 @@
       <form method="dialog" class="modal-card">
         <div class="modal-head">
           <h2>Настройки</h2>
-          <button class="close-button" value="close" aria-label="Закрыть">
+          <button class="close-button" type="button" data-close="settingsModal" aria-label="Закрыть">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>
           </button>
         </div>
@@ -305,18 +307,18 @@
       </section>
     </dialog>
 
-    <script src="js/modules/config.js?v=2026.09.30.2"></script>
-    <script src="js/modules/data.js?v=2026.09.30.2"></script>
-    <script src="js/modules/storage.js?v=2026.09.30.2"></script>
-    <script src="js/modules/error-catalog.js?v=2026.09.30.2"></script>
-    <script src="js/modules/holiday.js?v=2026.09.30.2"></script>
-    <script src="js/modules/api-client.js?v=2026.09.30.2"></script>
-    <script src="js/modules/public-api.js?v=2026.09.30.2"></script>
-    <script src="js/modules/schedule-request.js?v=2026.09.30.2"></script>
-    <script src="js/modules/schedule-time-store.js?v=2026.09.30.2"></script>
-    <script src="js/modules/schedule-transform.js?v=2026.09.30.2"></script>
-    <script src="js/modules/schedule-service.js?v=2026.09.30.2"></script>
-    <script src="js/modules/holiday-particles.js?v=2026.09.30.2"></script>
-    <script src="js/app.js?v=2026.09.30.2"></script>
+    <script src="js/modules/config.js?v=2026.09.30.3"></script>
+    <script src="js/modules/data.js?v=2026.09.30.3"></script>
+    <script src="js/modules/storage.js?v=2026.09.30.3"></script>
+    <script src="js/modules/error-catalog.js?v=2026.09.30.3"></script>
+    <script src="js/modules/holiday.js?v=2026.09.30.3"></script>
+    <script src="js/modules/api-client.js?v=2026.09.30.3"></script>
+    <script src="js/modules/public-api.js?v=2026.09.30.3"></script>
+    <script src="js/modules/schedule-request.js?v=2026.09.30.3"></script>
+    <script src="js/modules/schedule-time-store.js?v=2026.09.30.3"></script>
+    <script src="js/modules/schedule-transform.js?v=2026.09.30.3"></script>
+    <script src="js/modules/schedule-service.js?v=2026.09.30.3"></script>
+    <script src="js/modules/holiday-particles.js?v=2026.09.30.3"></script>
+    <script src="js/app.js?v=2026.09.30.3"></script>
   </body>
 </html>
