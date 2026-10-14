@@ -427,6 +427,78 @@ function assertStorageFailureFallback() {
   vm.runInContext(read("js/modules/storage.js"), sandbox, { filename: "storage.js" });
   assert.strictEqual(win.ScheduleStorage.writeSavedState({ theme: "dark" }), false);
   assert.strictEqual(win.ScheduleStorage.writeRoomCache({}), false);
+  assert.strictEqual(win.ScheduleStorage.writeScheduleMetaCache({}), false);
+}
+
+function assertTeacherNormalization() {
+  const win = {};
+  win.window = win;
+  const sandbox = { window: win };
+  vm.createContext(sandbox);
+  vm.runInContext(read("js/modules/schedule-transform.js"), sandbox, { filename: "schedule-transform.js" });
+
+  const teachers = Array.from(win.ScheduleTransform.normalizeTeachers([
+    " Воинкова   НА ",
+    "Воинкова\u00a0НА",
+    { name: "Ильина  ВД" },
+    ""
+  ]));
+  assert.strictEqual(teachers.filter((name) => name === "Воинкова НА").length, 1, "Воинкова должна сохраняться в списке и не дублироваться из-за пробелов");
+  assert(teachers.includes("Ильина ВД"), "внутренние пробелы в ФИО должны нормализоваться");
+}
+
+async function assertScheduleCaching() {
+  let calls = 0;
+  const win = {
+    ScheduleRequest: {
+      apiMode: () => "legacy",
+      loadWeekSchedule: () => new Promise((resolve) => setTimeout(() => {
+        calls += 1;
+        resolve([]);
+      }, 5))
+    },
+    ScheduleTransform: { toUiLessonsForDate: (value) => value }
+  };
+  win.window = win;
+  win.setTimeout = setTimeout;
+  win.clearTimeout = clearTimeout;
+  const sandbox = { window: win, setTimeout, clearTimeout };
+  vm.createContext(sandbox);
+  vm.runInContext(read("js/modules/schedule-service.js"), sandbox, { filename: "schedule-service.js" });
+
+  const params = { type: "teacher", query: "Воинкова НА", weekStart: "2026-10-12", dateKey: "2026-10-14" };
+  await Promise.all([win.ScheduleService.getWeekDay(params), win.ScheduleService.getWeekDay(params)]);
+  await win.ScheduleService.getWeekDay(params);
+  assert.strictEqual(calls, 1, "параллельные запросы и пустой ответ должны использовать один кешированный результат");
+}
+
+async function assertLegacyMetaRefresh() {
+  let calls = 0;
+  const win = {
+    ScheduleConfig: { apiMode: "legacy" },
+    SchedulePublicApi: {
+      getLegacyMeta: async () => ({ countOfChanges: ++calls, data: { teachers: ["Воинкова НА"], groups: [] } })
+    }
+  };
+  win.window = win;
+  const sandbox = { window: win };
+  vm.createContext(sandbox);
+  vm.runInContext(read("js/modules/schedule-request.js"), sandbox, { filename: "schedule-request.js" });
+
+  await Promise.all([
+    win.ScheduleRequest.loadGroups({ date: "2026-10-14" }),
+    win.ScheduleRequest.loadTeachers({ date: "2026-10-14" })
+  ]);
+  assert.strictEqual(calls, 1, "справочники одной даты должны разделять один запрос метаданных");
+  await win.ScheduleRequest.loadScheduleMeta({ date: "2026-10-14", force: true });
+  assert.strictEqual(calls, 2, "принудительная проверка должна получать новое countOfChanges");
+}
+
+function assertSchedulePrefetchAndChangeNotice() {
+  const app = read("js/app.js");
+  assert(/function prefetchSelectedSchedule/.test(app) && /scheduleService\.getWeekDay\(params\)/.test(app), "выбранное расписание должно предварительно загружаться");
+  assert(/count > Number\(previous\.count\)/.test(app), "уведомление должно появляться только при увеличении countOfChanges");
+  assert(/Расписание на выбранную дату/.test(app), "пользователь должен видеть сообщение об изменении выбранной даты");
 }
 
 function assertRoomLabels() {
@@ -519,10 +591,16 @@ assertUiClassesAreBuilt();
 assertSettingsDialogScrolling();
 assertIosCompatibility();
 assertStorageFailureFallback();
+assertTeacherNormalization();
+assertSchedulePrefetchAndChangeNotice();
 assertRoomLabels();
 assertDownloadAndRoomCacheSupport();
 assertErrorCatalog();
-assertScheduleDatesFetching().then(() => console.log("Static checks passed"), (error) => {
+Promise.all([
+  assertScheduleDatesFetching(),
+  assertScheduleCaching(),
+  assertLegacyMetaRefresh()
+]).then(() => console.log("Static checks passed"), (error) => {
   console.error(error);
   process.exit(1);
 });

@@ -37,8 +37,10 @@ window.ScheduleTransform = (() => {
   }
 
   function teacherName(teacher) {
-    if (typeof teacher === "string") return teacher;
-    return teacher?.full_name || teacher?.full_name_long || teacher?.name || teacher?.short_name || "";
+    const value = typeof teacher === "string"
+      ? teacher
+      : teacher?.full_name || teacher?.full_name_long || teacher?.name || teacher?.short_name || "";
+    return text(value).replace(/\s+/g, " ");
   }
 
   function upperGroup(value) {
@@ -117,7 +119,12 @@ window.ScheduleTransform = (() => {
     if (payload?.items) return normalizeTeachers(payload.items);
     if (payload?.results) return normalizeTeachers(payload.results);
     if (!Array.isArray(payload)) return [];
-    return compact(payload.map(teacherName)).sort(sortRu);
+    const unique = new Map();
+    compact(payload.map(teacherName)).forEach((teacher) => {
+      const key = teacher.toLocaleLowerCase("ru-RU");
+      if (!unique.has(key)) unique.set(key, teacher);
+    });
+    return Array.from(unique.values()).sort(sortRu);
   }
 
   function normalizeBuildings(payload) {

@@ -10,7 +10,9 @@ const { activeHoliday } = window.ScheduleHoliday;
 const {
   readSavedState,
   readRoomCache,
+  readScheduleMetaCache,
   writeRoomCache,
+  writeScheduleMetaCache,
   writeSavedState
 } = window.ScheduleStorage;
 const scheduleService = window.ScheduleService;
@@ -192,6 +194,7 @@ if (state.selectedEntity && !state.lastSelectedByMode[state.mode]) {
 }
 
 const roomCache = typeof readRoomCache === "function" ? readRoomCache() : {};
+const scheduleMetaCache = typeof readScheduleMetaCache === "function" ? readScheduleMetaCache() : {};
 const roomCacheTtlMs = 6 * 60 * 60 * 1000;
 const maxRoomCacheDates = 20;
 
@@ -219,6 +222,7 @@ let catalogLoadRequestId = 0;
 let roomsLoadRequestId = 0;
 let catalogRefreshTimer = 0;
 let roomsRefreshTimer = 0;
+let schedulePrefetchTimer = 0;
 let pendingFavoriteRemoval = { key: "", until: 0 };
 
 function saveState() {
@@ -396,6 +400,58 @@ function setScheduleUrl(url = "") {
   updateDownloadButton();
 }
 
+function formatScheduleDate(dateKey) {
+  const [year, month, day] = String(dateKey || "").slice(0, 10).split("-");
+  return year && month && day ? `${day}.${month}.${year}` : String(dateKey || "");
+}
+
+function processScheduleMeta(meta, fallbackDateKey = selectedDateKey()) {
+  if (!meta) return false;
+  const dateKey = String(fallbackDateKey || "").slice(0, 10);
+  const count = Number(meta.countOfChanges ?? meta.count_of_changes);
+  if (!dateKey || !Number.isFinite(count)) return false;
+
+  const previous = scheduleMetaCache[dateKey];
+  const changed = Number.isFinite(Number(previous?.count)) && count > Number(previous.count);
+  scheduleMetaCache[dateKey] = {
+    count,
+    lastChange: String(meta.lastChange || meta.last_change || "")
+  };
+  writeScheduleMetaCache(scheduleMetaCache);
+
+  if (changed) {
+    scheduleService.clearDateCache(dateKey);
+    if (dateKey === selectedDateKey()) hideResult();
+    showMessage(`Расписание на выбранную дату ${formatScheduleDate(dateKey)} было изменено (изменений: ${count})`);
+  }
+  return changed;
+}
+
+async function refreshSelectedDateMeta(dateKey) {
+  try {
+    const meta = await scheduleService.getScheduleMeta({ dateKey, force: true });
+    return processScheduleMeta(meta, dateKey);
+  } catch (_) {
+    // Фоновая проверка не должна мешать работе с уже загруженным расписанием.
+    return false;
+  }
+}
+
+function prefetchSelectedSchedule(delay = 80) {
+  window.clearTimeout(schedulePrefetchTimer);
+  if (!state.selectedEntity || !hasScheduleDate(state.selectedDate)) return;
+
+  const params = {
+    type: scheduleType(),
+    query: state.selectedEntity,
+    weekStart: selectedWeekStartKey(),
+    dateKey: selectedDateKey()
+  };
+  schedulePrefetchTimer = window.setTimeout(() => {
+    scheduleService.getWeekDay(params).catch(() => {});
+  }, delay);
+}
+
 function updateDownloadButton() {
   if (!downloadScheduleButton) return;
   downloadScheduleButton.disabled = !apiState.scheduleUrl;
@@ -500,6 +556,7 @@ function addOption(entity) {
     saveState();
     updateTrigger();
     closeSelect();
+    prefetchSelectedSchedule(0);
   });
   option.append(star, button);
   entityOptions.append(option);
@@ -584,6 +641,9 @@ function refreshCatalogsForDate(force = false) {
   if (isAuditMode) return;
   window.clearTimeout(catalogRefreshTimer);
   catalogRefreshTimer = window.setTimeout(() => loadCatalogs({ force }), 80);
+  refreshSelectedDateMeta(selectedDateKey()).then((changed) => {
+    if (changed) loadCatalogs({ force: true });
+  });
 }
 
 function renderCalendar() {
@@ -1214,6 +1274,7 @@ function applyCatalogs(catalogs) {
   apiState.classrooms = catalogs.classrooms || apiState.classrooms || [];
   apiState.dictionaries = catalogs.dictionaries;
   setScheduleUrl(catalogs.meta?.url || "");
+  processScheduleMeta(catalogs.meta, selectedDateKey());
   if (catalogs.dates?.length) apiState.scheduleDates = new Set(catalogs.dates);
   apiState.catalogsLoaded = true;
 
@@ -1229,6 +1290,7 @@ function applyCatalogs(catalogs) {
   renderEntityOptions();
   renderBuildingButtons();
   renderCalendar();
+  prefetchSelectedSchedule();
 
   if (catalogs.errors?.length) {
     showMessage(apiErrorText(catalogs.errors[0], "Не удалось загрузить списки групп и преподавателей"));
@@ -1346,6 +1408,7 @@ modeButtons.forEach((button) => {
     updateTrigger();
     renderEntityOptions();
     applySettings();
+    prefetchSelectedSchedule(0);
   });
 });
 

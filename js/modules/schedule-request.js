@@ -1,6 +1,7 @@
 window.ScheduleRequest = (() => {
   const api = window.SchedulePublicApi;
   const legacyMetaCache = new Map();
+  const legacyMetaTtlMs = 60 * 1000;
   let legacyDatesPromise = null;
 
   function apiMode() {
@@ -28,14 +29,22 @@ window.ScheduleRequest = (() => {
     return [...dates].filter(Boolean).sort((a, b) => a.localeCompare(b));
   }
 
-  function legacyMeta(dateKey) {
-    if (!legacyMetaCache.has(dateKey)) {
-      legacyMetaCache.set(dateKey, api.getLegacyMeta(dateKey).catch((error) => {
+  function legacyMeta(dateKey, { force = false } = {}) {
+    const cached = legacyMetaCache.get(dateKey);
+    if (cached?.promise) return cached.promise;
+    if (!force && cached?.expiresAt > Date.now()) return Promise.resolve(cached.value);
+
+    const promise = api.getLegacyMeta(dateKey)
+      .then((value) => {
+        legacyMetaCache.set(dateKey, { value, expiresAt: Date.now() + legacyMetaTtlMs, promise: null });
+        return value;
+      })
+      .catch((error) => {
         legacyMetaCache.delete(dateKey);
         throw error;
-      }));
-    }
-    return legacyMetaCache.get(dateKey);
+      });
+    legacyMetaCache.set(dateKey, { value: cached?.value, expiresAt: cached?.expiresAt || 0, promise });
+    return promise;
   }
 
   // Список дат меняется (добавляются новые расписания), поэтому кэш живёт только пока
@@ -50,11 +59,11 @@ window.ScheduleRequest = (() => {
   }
 
 
-  async function loadCatalogMeta({ date } = {}) {
+  async function loadCatalogMeta({ date, force = false } = {}) {
     const requestedDate = normalizeDateKey(date) || todayKey();
 
     try {
-      return await legacyMeta(requestedDate);
+      return await legacyMeta(requestedDate, { force });
     } catch (error) {
       if (error?.status === 404) {
         const notFound = new Error("На данную дату нет расписания");
@@ -70,7 +79,7 @@ window.ScheduleRequest = (() => {
   function loadScheduleMeta(params = {}) {
     if (!isLegacyMode()) return Promise.resolve(null);
     const date = normalizeDateKey(params.date);
-    return date ? api.getLegacyMeta(date) : Promise.resolve(null);
+    return date ? legacyMeta(date, { force: Boolean(params.force) }) : Promise.resolve(null);
   }
 
   function legacyBuildingLabel(building, index) {

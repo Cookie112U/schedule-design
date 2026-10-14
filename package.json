@@ -7,9 +7,11 @@
     "dev": "node dev-server.js",
     "css:build": "tailwindcss -i ./src/app.css -o ./css/app.css --minify",
     "css:watch": "tailwindcss -i ./src/app.css -o ./css/app.css --watch",
-    "test": "node tests/static-checks.js"
+    "test": "node tests/static-checks.js",
+    "test:e2e": "playwright test tests/browser-smoke.spec.js"
   },
   "devDependencies": {
+    "@playwright/test": "^1.64.1",
     "@tailwindcss/cli": "^4.3.3",
     "tailwindcss": "^4.3.3"
   }

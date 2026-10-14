@@ -2,6 +2,7 @@ window.ScheduleService = (() => {
   const request = window.ScheduleRequest;
   const transform = window.ScheduleTransform;
   const cache = new Map();
+  const pending = new Map();
   const ttl = {
     catalog: 10 * 60 * 1000,
     schedule: 45 * 1000,
@@ -20,18 +21,25 @@ window.ScheduleService = (() => {
       cache.delete(key);
       return null;
     }
-    return item.value;
+    return item;
   }
 
   async function withCache(key, maxAge, loader, force = false) {
+    if (pending.has(key)) return pending.get(key);
     if (!force) {
       const cached = fromCache(key);
-      if (cached) return cached;
+      if (cached) return cached.value;
     }
 
-    const value = await loader();
-    cache.set(key, { value, expiresAt: Date.now() + maxAge });
-    return value;
+    const promise = Promise.resolve()
+      .then(loader)
+      .then((value) => {
+        cache.set(key, { value, expiresAt: Date.now() + maxAge });
+        return value;
+      })
+      .finally(() => pending.delete(key));
+    pending.set(key, promise);
+    return promise;
   }
 
   function settle(name, promise, normalize = (value) => value, optional = false) {
@@ -44,7 +52,7 @@ window.ScheduleService = (() => {
     const key = cacheKey({ type: "catalogs", dateDays, dateKey, mode: request.apiMode?.() });
     return withCache(key, ttl.catalog, async () => {
       const criticalResults = [];
-      const groupsResult = await settle("groups", request.loadGroups({ date: dateKey }), transform.normalizeGroups);
+      const groupsResult = await settle("groups", request.loadGroups({ date: dateKey, force }), transform.normalizeGroups);
       criticalResults.push(groupsResult);
 
       if (!groupsResult.error) {
@@ -103,6 +111,11 @@ window.ScheduleService = (() => {
     const key = cacheKey({ type: "week", view: type, query, weekStart, dateKey, mode: request.apiMode?.() });
     const response = await withCache(key, ttl.schedule, () => request.loadWeekSchedule({ type, query, weekStart, dateKey }), force);
     return transform.toUiLessonsForDate(response, dateKey);
+  }
+
+  function getScheduleMeta({ dateKey, force = false } = {}) {
+    const key = cacheKey({ type: "meta", dateKey, mode: request.apiMode?.() });
+    return withCache(key, ttl.schedule, () => request.loadScheduleMeta({ date: dateKey, force }), force);
   }
 
   async function getClassrooms({ dateKey, force = false } = {}) {
@@ -180,6 +193,7 @@ window.ScheduleService = (() => {
     clearDateCache,
     getCatalogs,
     getClassrooms,
+    getScheduleMeta,
     getScheduleDates,
     getTimeTemplate,
     getWeekDay,
