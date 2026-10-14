@@ -503,10 +503,37 @@ function assertSchedulePrefetchAndChangeNotice() {
   assert(/readCachedSchedule/.test(app) && /writeScheduleDataCache/.test(app), "готовое расписание должно кешироваться между открытиями страницы");
   assert(/restoreCachedCatalogs/.test(app) && /writeCatalogCache/.test(app), "последний корректный каталог должен переживать обновление страницы");
   const html = read("index.html");
-  assert(/html:not\(\.ui-ready\) body \{ visibility: hidden; \}/.test(html), "интерфейс не должен показываться до применения темы и компонентов");
+  assert(!/visibility:\s*hidden/.test(html), "страница не должна скрываться пустой заглушкой при обновлении");
+  assert(/app\.dataset\.holiday = root\.dataset\.holiday/.test(html), "праздник должен применяться к app до первого кадра");
   assert(/display=optional/.test(html), "веб-шрифты не должны поздно сдвигать уже показанную верстку");
   assert(/count > Number\(previous\.count\)/.test(app), "уведомление должно появляться только при увеличении countOfChanges");
   assert(/Расписание на выбранную дату/.test(app), "пользователь должен видеть сообщение об изменении выбранной даты");
+}
+
+function assertAutomaticHolidayDates() {
+  const win = {};
+  win.window = win;
+  const sandbox = { window: win };
+  vm.createContext(sandbox);
+  vm.runInContext(read("js/modules/holiday.js"), sandbox, { filename: "holiday.js" });
+  const autoHoliday = win.ScheduleHoliday.autoHoliday;
+  [
+    [new Date(2026, 11, 22), "new-year"],
+    [new Date(2027, 0, 10), "new-year"],
+    [new Date(2027, 1, 21), "february-23"],
+    [new Date(2027, 1, 24), "february-23"],
+    [new Date(2027, 2, 6), "march-8"],
+    [new Date(2027, 2, 7), "march-8"],
+    [new Date(2027, 3, 30), "easter"],
+    [new Date(2027, 4, 3), "easter"],
+    [new Date(2027, 4, 7), "victory-day"],
+    [new Date(2027, 4, 9), "victory-day"],
+    [new Date(2027, 5, 10), "russia-day"],
+    [new Date(2027, 5, 13), "russia-day"],
+    [new Date(2027, 8, 1), "september"],
+    [new Date(2027, 8, 5), "september"],
+    [new Date(2027, 9, 14), "none"]
+  ].forEach(([date, expected]) => assert.strictEqual(autoHoliday(date), expected, `неверная автоматическая тема для ${date.toISOString()}`));
 }
 
 function assertRoomLabels() {
@@ -603,6 +630,7 @@ assertIosCompatibility();
 assertStorageFailureFallback();
 assertTeacherNormalization();
 assertSchedulePrefetchAndChangeNotice();
+assertAutomaticHolidayDates();
 assertRoomLabels();
 assertDownloadAndRoomCacheSupport();
 assertErrorCatalog();

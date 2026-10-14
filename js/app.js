@@ -1662,20 +1662,6 @@ renderPairOptions();
 updateDownloadButton();
 restoreCachedCatalogs(selectedDateKey());
 
-let interfaceRevealed = false;
-function revealInterface() {
-  if (interfaceRevealed) return;
-  interfaceRevealed = true;
-  window.requestAnimationFrame(() => document.documentElement.classList.add("ui-ready"));
-}
-
-if (document.fonts?.ready) {
-  document.fonts.ready.then(revealInterface, revealInterface);
-  window.setTimeout(revealInterface, 900);
-} else {
-  revealInterface();
-}
-
 if (!isAuditMode) {
   loadAvailableDates().then(startScheduleWatcher);
   loadCatalogs();

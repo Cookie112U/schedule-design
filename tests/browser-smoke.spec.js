@@ -72,7 +72,6 @@ test("teacher catalog keeps Воинкова and prefetched schedule opens local
   expect(api.teacherRequests()).toBe(1);
 
   await page.reload({ waitUntil: "domcontentloaded" });
-  await expect(page.locator("html")).toHaveClass(/ui-ready/);
   await expect(page.locator("#showSchedule")).toBeEnabled();
   const cachedStartedAt = Date.now();
   await page.locator("#showSchedule").click();
@@ -104,32 +103,64 @@ test("cached catalogs survive a temporary API failure after reload", async ({ pa
   await page.unrouteAll({ behavior: "wait" });
   await page.route("**/api/schedule/legacy**", (route) => route.abort("failed"));
   await page.reload({ waitUntil: "domcontentloaded" });
-  await expect(page.locator("html")).toHaveClass(/ui-ready/);
   await expect(page.locator("#entityTrigger")).toContainText("Воинкова НА");
   await page.locator("#entityTrigger").click();
   await page.locator("#entitySearch").fill("Воинкова");
   await expect(page.locator(".select-option-main", { hasText: "Воинкова НА" })).toBeVisible();
 });
 
-test("first paint stays hidden until the saved dark theme is ready", async ({ page }) => {
+test("saved theme and holiday are applied before app initialization", async ({ page }) => {
   await page.addInitScript(() => {
     localStorage.setItem("nttek-schedule-ui-v2", JSON.stringify({ theme: "dark", holidayMode: "new-year" }));
   });
-  await page.route("**/css/app.css*", async (route) => {
-    await new Promise((resolve) => setTimeout(resolve, 250));
-    await route.continue();
-  });
+  await page.route("**/js/app.js*", (route) => route.abort("failed"));
+  await page.goto(baseURL, { waitUntil: "domcontentloaded" });
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  await expect(page.locator("html")).toHaveAttribute("data-holiday", "new-year");
+  await expect(page.locator(".app")).toHaveAttribute("data-theme", "dark");
+  await expect(page.locator(".app")).toHaveAttribute("data-holiday", "new-year");
+  await expect(page.locator("body")).toBeVisible();
+});
 
-  const navigation = page.goto(baseURL, { waitUntil: "domcontentloaded" });
-  await page.waitForTimeout(80);
-  const earlyPaint = await page.evaluate(() => ({
-    ready: document.documentElement.classList.contains("ui-ready"),
-    background: getComputedStyle(document.documentElement).backgroundColor,
-    bodyVisibility: document.body ? getComputedStyle(document.body).visibility : "hidden"
-  }));
-  expect(earlyPaint.ready).toBeFalsy();
-  expect(earlyPaint.bodyVisibility).toBe("hidden");
-  expect(earlyPaint.background).not.toBe("rgb(255, 255, 255)");
-  await navigation;
-  await expect(page.locator("html")).toHaveClass(/ui-ready/);
+test("every holiday theme renders in light and dark modes", async ({ page, browserName }) => {
+  test.skip(browserName !== "chromium", "visual matrix runs once; browser compatibility is covered separately");
+  await mockLegacySchedule(page);
+  const holidays = ["none", "new-year", "russia-day", "easter", "september", "march-8", "february-23", "victory-day"];
+  for (const theme of ["light", "dark"]) {
+    for (const holidayMode of holidays) {
+      await page.goto(baseURL, { waitUntil: "domcontentloaded" });
+      await page.evaluate(({ theme, holidayMode }) => {
+        const current = JSON.parse(localStorage.getItem("nttek-schedule-ui-v2") || "{}");
+        localStorage.setItem("nttek-schedule-ui-v2", JSON.stringify({ ...current, theme, holidayMode }));
+      }, { theme, holidayMode });
+      await page.reload({ waitUntil: "domcontentloaded" });
+      await expect(page.locator(".app")).toHaveAttribute("data-theme", theme);
+      await expect(page.locator(".app")).toHaveAttribute("data-holiday", holidayMode);
+      const visual = await page.evaluate(() => {
+        const app = document.querySelector(".app");
+        const calendar = document.querySelector(".calendar-panel");
+        const search = document.querySelector(".search-panel");
+        return {
+          overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+          appHeight: app.getBoundingClientRect().height,
+          calendarWidth: calendar.getBoundingClientRect().width,
+          searchWidth: search.getBoundingClientRect().width,
+          background: getComputedStyle(document.body).backgroundColor
+        };
+      });
+      expect(visual.overflow).toBeLessThanOrEqual(1);
+      expect(visual.appHeight).toBeGreaterThan(500);
+      expect(visual.calendarWidth).toBeGreaterThan(250);
+      expect(visual.searchWidth).toBeGreaterThan(200);
+      expect(visual.background).not.toBe("rgba(0, 0, 0, 0)");
+    }
+  }
+
+  await page.evaluate(() => {
+    const current = JSON.parse(localStorage.getItem("nttek-schedule-ui-v2") || "{}");
+    localStorage.setItem("nttek-schedule-ui-v2", JSON.stringify({ ...current, holidayMode: "auto" }));
+  });
+  await page.reload({ waitUntil: "domcontentloaded" });
+  const automaticHoliday = await page.evaluate(() => window.ScheduleHoliday.autoHoliday(new Date()));
+  await expect(page.locator(".app")).toHaveAttribute("data-holiday", automaticHoliday);
 });
