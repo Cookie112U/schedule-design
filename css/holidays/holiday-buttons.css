@@ -1,107 +1,29 @@
-.app[data-holiday]:not([data-holiday="none"]) {
-  --holiday-glass-bg: color-mix(in srgb, var(--surface) 72%, transparent);
-  --holiday-glass-border: color-mix(in srgb, var(--line) 72%, transparent);
-  --holiday-glass-ink: var(--ink);
-  --holiday-glass-shadow: 0 14px 28px rgba(0, 0, 0, 0.11);
-}
-
-.app[data-holiday="new-year"] {
-  --holiday-glass-bg: rgba(255, 255, 255, 0.46);
-  --holiday-glass-border: rgba(255, 255, 255, 0.72);
-  --holiday-glass-ink: #14303d;
-  --holiday-glass-shadow: 0 16px 32px rgba(83, 139, 156, 0.16);
-}
-
-.app[data-theme="light"][data-holiday="march-8"] {
-  --holiday-glass-bg: rgba(201, 70, 145, 0.46);
-  --holiday-glass-border: rgba(255, 255, 255, 0.72);
-  --holiday-glass-ink: #ffffff;
-  --holiday-glass-shadow: 0 16px 32px rgba(168, 67, 138, 0.16);
-}
-.app[data-theme="dark"][data-holiday="new-year"],
-.app[data-holiday="february-23"],
-.app[data-holiday="victory-day"] {
-  --holiday-glass-bg: rgba(255, 255, 255, 0.15);
-  --holiday-glass-border: rgba(255, 255, 255, 0.58);
-  --holiday-glass-ink: #ffffff;
-  --holiday-glass-shadow: 0 16px 32px rgba(0, 0, 0, 0.2);
-}
-
-.app[data-holiday="easter"] {
-  --holiday-glass-bg: var(--easter-surface-strong);
-  --holiday-glass-border: var(--easter-line);
-  --holiday-glass-ink: var(--easter-text);
-}
-
-.app[data-holiday]:not([data-holiday="none"]) .select-like,
-.app[data-holiday]:not([data-holiday="none"]) .select-trigger,
-.app[data-holiday]:not([data-holiday="none"]) .select-menu,
-.app[data-holiday]:not([data-holiday="none"]) .month-menu,
-.app[data-holiday]:not([data-holiday="none"]) .mode-toggle,
-.app[data-holiday]:not([data-holiday="none"]) .secondary-button,
-.app[data-holiday]:not([data-holiday="none"]) .month-arrow {
-  color: var(--holiday-glass-ink);
-  background: var(--holiday-glass-bg);
-  border-color: var(--holiday-glass-border);
-  box-shadow: var(--holiday-glass-shadow);
-  backdrop-filter: blur(12px) saturate(125%);
-  -webkit-backdrop-filter: blur(12px) saturate(125%);
-}
-
-.app[data-holiday]:not([data-holiday="none"]) .mode-button:not(.active) {
-  color: var(--holiday-glass-ink);
-  background: color-mix(in srgb, var(--holiday-glass-bg) 78%, transparent);
-  border: 1px solid color-mix(in srgb, var(--holiday-glass-border) 72%, transparent);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--holiday-glass-border) 42%, transparent);
-  backdrop-filter: blur(12px) saturate(125%);
-  -webkit-backdrop-filter: blur(12px) saturate(125%);
+/*
+ * Общие правила праздничных оформлений.
+ * Панели расписания — непрозрачные карточки, поэтому «стеклянные» контролы
+ * больше не нужны: остаются цвет акцента у ключевых кнопок и прозрачная шапка.
+ */
+.app[data-holiday]:not([data-holiday="none"]) .app-header {
+  position: relative;
+  background: transparent;
+  border-color: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 .app[data-holiday]:not([data-holiday="none"]) .primary-button,
 .app[data-holiday]:not([data-holiday="none"]) .mode-button.active,
-.app[data-holiday]:not([data-holiday="none"]) .setting-pill.active,
 .app[data-holiday]:not([data-holiday="none"]) .day-cell.active,
 .app[data-holiday]:not([data-holiday="none"]) .week-date.active,
 .app[data-holiday]:not([data-holiday="none"]) .icon-button,
 .app[data-holiday]:not([data-holiday="none"]) .holiday-option.active {
-  color: var(--accent-ink);
-  background: var(--accent);
-  border-color: color-mix(in srgb, var(--accent) 74%, var(--holiday-glass-border));
-  box-shadow: 0 14px 30px color-mix(in srgb, var(--accent) 24%, transparent);
-}
-
-.app[data-holiday]:not([data-holiday="none"]) .secondary-button {
-  font-weight: 800;
-  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.12);
-}
-
-.app[data-holiday]:not([data-holiday="none"]) .secondary-button:disabled {
-  opacity: 0.62;
+  color: var(--primary-foreground);
+  background: var(--primary);
+  border-color: color-mix(in srgb, var(--primary) 74%, transparent);
+  box-shadow: 0 14px 30px color-mix(in srgb, var(--primary) 24%, transparent);
 }
 
 .app[data-holiday="february-23"] .brand,
 .app[data-holiday="victory-day"] .brand {
   color: #ffffff;
-}
-
-.app[data-holiday="february-23"] .week-strip,
-.app[data-holiday="victory-day"] .week-strip {
-  color: rgba(255, 255, 255, 0.82);
-}
-
-@media (max-width: 980px) {
-  .app[data-holiday]:not([data-holiday="none"]) .calendar-panel,
-  .app[data-holiday]:not([data-holiday="none"]) .search-panel {
-    width: 100%;
-    max-width: 732px;
-  }
-
-  .app[data-holiday]:not([data-holiday="none"]) .calendar-wrap,
-  .app[data-holiday]:not([data-holiday="none"]) .calendar-wrap > div,
-  .app[data-holiday]:not([data-holiday="none"]) .week-strip,
-  .app[data-holiday]:not([data-holiday="none"]) .calendar-grid {
-    min-width: 0;
-    max-width: 100%;
-    grid-template-rows: repeat(6, minmax(0, 1fr));
-  }
 }

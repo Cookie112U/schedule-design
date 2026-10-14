@@ -1,0 +1,68 @@
+/*
+ * Примитивы в духе shadcn/ui. Из них собраны компоненты расписания
+ * (controls.css, calendar.css, schedule.css, overlays.css) — по ним же
+ * можно верстать новые элементы без правки CSS.
+ */
+
+/* Button */
+@utility btn {
+  @apply inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors outline-none select-none;
+  @apply focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background;
+  @apply disabled:pointer-events-none disabled:opacity-50;
+  @apply [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0;
+}
+
+@utility btn-primary {
+  @apply bg-primary text-primary-foreground hover:bg-primary-hover;
+}
+
+@utility btn-outline {
+  @apply border border-input bg-background hover:bg-accent hover:text-accent-foreground;
+}
+
+@utility btn-ghost {
+  @apply hover:bg-accent hover:text-accent-foreground;
+}
+
+/* Input / Select trigger */
+@utility field {
+  @apply flex h-11 w-full items-center rounded-lg border border-input bg-background px-3 text-sm transition-colors outline-none placeholder:text-muted-foreground;
+  @apply focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring;
+  @apply disabled:cursor-not-allowed disabled:opacity-50;
+}
+
+/* Card: рамка без тени, тень — только на hover, как в карточках основного сайта */
+@utility card {
+  @apply rounded-card border border-neutral-200 bg-card text-card-foreground dark:border-neutral-800;
+}
+
+/* Popover / Select content */
+@utility popover {
+  @apply rounded-lg border bg-popover p-1 text-popover-foreground shadow-lg;
+}
+
+/* Badge: мягкий чип primary-50 / primary-700 */
+@utility badge {
+  @apply inline-flex items-center justify-center rounded-full bg-primary-soft px-2.5 py-0.5 text-xs font-medium whitespace-nowrap text-primary-soft-foreground;
+}
+
+@keyframes popover-in {
+  from {
+    opacity: 0;
+    transform: translateY(-0.25rem) scale(0.98);
+  }
+}
+
+@keyframes dialog-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.5rem) scale(0.98);
+  }
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.5rem);
+  }
+}

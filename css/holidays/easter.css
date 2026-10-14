@@ -52,16 +52,15 @@
 .app[data-holiday="easter"] .calendar-panel,
 .app[data-holiday="easter"] .search-panel,
 .app[data-holiday="easter"] .result-panel {
-  --surface: var(--easter-surface-strong);
-  --soft: var(--easter-surface-soft);
-  --calendar-soft: var(--easter-calendar);
-  --calendar-weekend: var(--easter-weekend);
-  --calendar-other: var(--easter-surface-soft);
-  --ink: var(--easter-text);
-  --muted: var(--easter-muted);
-  --line: var(--easter-line);
-  --lesson: var(--easter-surface-soft);
-  --lesson-divider: var(--easter-line);
+  --card: var(--easter-surface-strong);
+  --background: var(--easter-surface-strong);
+  --muted: var(--easter-surface-soft);
+  --muted-foreground: var(--easter-muted);
+  --accent: var(--easter-calendar);
+  --foreground: var(--easter-text);
+  --card-foreground: var(--easter-text);
+  --border: var(--easter-line);
+  --input: var(--easter-line);
   color: var(--easter-text);
 }
 
@@ -74,12 +73,6 @@
   -webkit-backdrop-filter: blur(18px) saturate(120%);
 }
 
-.app[data-holiday="easter"] .calendar-panel {
-  width: fit-content;
-  max-width: 100%;
-  padding: clamp(14px, 1.6vw, 22px);
-}
-
 .app[data-theme="light"][data-holiday="easter"] .calendar-panel {
   background: rgb(255 255 255 / 23%);
 }
@@ -87,23 +80,6 @@
 .app[data-theme="dark"][data-holiday="easter"] .calendar-panel,
 .app[data-theme="dark"][data-holiday="easter"] .result-panel {
   box-shadow: 0 28px 70px rgba(0, 0, 0, 0.35);
-}
-
-.app[data-holiday="easter"] .select-like,
-.app[data-holiday="easter"] .select-trigger,
-.app[data-holiday="easter"] .mode-toggle,
-.app[data-holiday="easter"] .secondary-button,
-.app[data-holiday="easter"] .month-arrow {
-  background: var(--easter-surface-strong);
-  border-color: var(--easter-line);
-}
-
-.app[data-theme="light"][data-holiday="easter"] .month-arrow {
-  background: rgb(255 255 255 / 23%);
-  border-color: rgba(74, 89, 77, 0.18);
-  box-shadow: 0 14px 34px rgba(82, 91, 64, 0.14);
-  backdrop-filter: blur(18px) saturate(120%);
-  -webkit-backdrop-filter: blur(18px) saturate(120%);
 }
 
 .app[data-holiday="easter"] .day-cell.active {
@@ -260,15 +236,6 @@
   .app[data-holiday="easter"] .calendar-panel,
   .app[data-holiday="easter"] .result-panel {
     border-radius: 22px;
-  }
-
-  .app[data-holiday="easter"] .calendar-panel {
-    width: 100%;
-    padding: 0;
-    background: transparent;
-    box-shadow: none;
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
   }
 
   .app[data-holiday="easter"] .flag-wave {

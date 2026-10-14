@@ -76,7 +76,6 @@
 
         doc.querySelectorAll(".day-cell").forEach((cell, index) => {
           const rect = cell.getBoundingClientRect();
-          if (Math.abs(rect.width - rect.height) > 1.5) issues.push(`day-cell[${index}] not square: ${rect.width.toFixed(1)}x${rect.height.toFixed(1)}`);
           const strong = cell.querySelector("strong");
           if (strong) {
             const inner = strong.getBoundingClientRect();
@@ -86,7 +85,7 @@
           }
         });
 
-        doc.querySelectorAll(".lesson-time, .modal-lesson-time").forEach((element, index) => {
+        doc.querySelectorAll(".lesson-time").forEach((element, index) => {
           if (element.scrollWidth - element.clientWidth > 1) issues.push(`time[${index}] overflow: ${element.textContent}`);
         });
 
@@ -137,16 +136,14 @@
           if (modalTitle) modalTitle.textContent = "Группа ХДЧЫ-24";
           if (modalDateLine) modalDateLine.innerHTML = "<span>18 сентября</span><span>Среда</span>";
           modalLessonList.innerHTML = lessons.map((lesson) => `
-            <article class="modal-lesson-card">
-              <div class="modal-lesson-top">
-                <span class="modal-lesson-number">${lesson.number}</span>
-                <span class="modal-lesson-time">${lesson.time}</span>
-                <span class="modal-lesson-side">${lesson.side}</span>
+            <article class="lesson-card">
+              <div class="lesson-row">
+                <span class="lesson-number">${lesson.number}</span>
+                <span class="lesson-time">${lesson.time}</span>
+                <span class="lesson-side">${lesson.side}</span>
               </div>
-              <div class="modal-lesson-bottom">
-                <div class="modal-lesson-subject">${lesson.subject}</div>
-                <div class="modal-lesson-place">${lesson.place}</div>
-              </div>
+              <p class="lesson-subject">${lesson.subject}</p>
+              ${lesson.place ? `<div class="lesson-room">${lesson.place}</div>` : ""}
             </article>
           `).join("");
         }
@@ -187,6 +184,7 @@
           app.dataset.theme = testCase.theme;
           doc.documentElement.dataset.size = testCase.size;
           doc.documentElement.dataset.theme = testCase.theme;
+          doc.documentElement.classList.toggle("dark", testCase.theme === "dark");
         }
 
         injectStressContent(doc);

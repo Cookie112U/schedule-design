@@ -17,16 +17,15 @@
 .app[data-holiday="september"] .calendar-panel,
 .app[data-holiday="september"] .search-panel,
 .app[data-holiday="september"] .result-panel {
-  --surface: var(--school-paper);
-  --soft: rgba(36, 58, 53, 0.08);
-  --calendar-soft: rgba(44, 155, 134, 0.13);
-  --calendar-weekend: rgba(219, 63, 90, 0.1);
-  --calendar-other: rgba(255, 247, 230, 0.62);
-  --ink: var(--school-ink);
-  --muted: var(--school-muted);
-  --line: rgba(36, 58, 53, 0.16);
-  --lesson: rgba(255, 247, 230, 0.88);
-  --lesson-divider: rgba(36, 58, 53, 0.15);
+  --card: var(--school-paper);
+  --background: var(--school-paper);
+  --muted: rgba(44, 155, 134, 0.13);
+  --muted-foreground: var(--school-muted);
+  --accent: rgba(36, 58, 53, 0.08);
+  --foreground: var(--school-ink);
+  --card-foreground: var(--school-ink);
+  --border: rgba(36, 58, 53, 0.16);
+  --input: rgba(36, 58, 53, 0.24);
   position: relative;
   padding: clamp(18px, 2.4vw, 34px);
   color: var(--school-ink);

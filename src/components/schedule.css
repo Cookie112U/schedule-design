@@ -1,0 +1,150 @@
+/*
+ * Панель поиска, результат расписания, карточки занятий и аудиторий.
+ * Одна и та же карточка занятия используется и внизу страницы, и в модальном окне.
+ */
+@layer components {
+  .search-panel {
+    @apply card grid grid-cols-[minmax(0,1fr)] content-start gap-4 p-4 md:p-6;
+  }
+
+  /* ---------- Результат ---------- */
+  .result-panel {
+    @apply card col-span-full p-4 md:p-6;
+  }
+
+  .result-date {
+    @apply mb-4 flex min-w-0 items-center gap-3 md:mb-6 md:gap-4;
+  }
+
+  .result-date strong:first-child {
+    @apply font-display text-5xl leading-none font-normal md:text-6xl;
+  }
+
+  .result-date span {
+    @apply text-sm leading-snug text-muted-foreground;
+  }
+
+  .result-date .result-entity {
+    @apply ml-auto max-w-[50%] text-right font-display text-lg leading-tight font-normal wrap-anywhere text-foreground md:text-2xl;
+  }
+
+  .lesson-list {
+    @apply grid gap-2;
+  }
+
+  .inline-state {
+    @apply rounded-lg border border-dashed p-4 text-center text-sm text-muted-foreground;
+  }
+
+  .room-cards .inline-state {
+    @apply col-span-full;
+  }
+
+  /* ---------- Занятие ---------- */
+  .lesson-card {
+    @apply grid gap-2 rounded-lg border bg-background p-3 md:p-4;
+  }
+
+  .lesson-row {
+    @apply flex min-w-0 items-center gap-3 text-sm;
+  }
+
+  .lesson-number {
+    @apply badge min-w-8;
+  }
+
+  .lesson-time {
+    @apply whitespace-nowrap text-muted-foreground tabular-nums;
+  }
+
+  .lesson-side {
+    @apply ml-auto min-w-0 max-w-[55%] text-right leading-snug wrap-anywhere text-muted-foreground;
+  }
+
+  .lesson-subject {
+    @apply text-base leading-snug font-medium wrap-anywhere;
+  }
+
+  .lesson-room {
+    @apply border-t pt-2 text-sm;
+  }
+
+  .lesson-place {
+    @apply flex items-start justify-between gap-3;
+  }
+
+  .lesson-building {
+    @apply min-w-0 text-left font-medium wrap-anywhere;
+  }
+
+  .lesson-building .building-address {
+    @apply mt-0.5 whitespace-normal;
+  }
+
+  .lesson-room-number {
+    @apply badge shrink-0 border bg-secondary px-2.5 text-secondary-foreground;
+  }
+
+  /* ---------- Аудитории ---------- */
+  .pair-filter {
+    @apply grid max-w-sm gap-2;
+  }
+
+  .pair-filter > span {
+    @apply text-sm font-medium;
+  }
+
+  .room-cards {
+    @apply grid min-w-0 gap-2;
+    grid-template-columns: repeat(auto-fill, minmax(min(9rem, 100%), 1fr));
+  }
+
+  .room-card {
+    @apply flex min-h-24 min-w-0 cursor-pointer flex-col items-stretch gap-1 rounded-lg border bg-card p-3 text-left text-card-foreground outline-none transition hover:shadow-md;
+    @apply focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background;
+  }
+
+  .room-title {
+    @apply flex items-center justify-between gap-2;
+  }
+
+  .room-title strong {
+    @apply truncate text-base font-semibold;
+  }
+
+  .status-dot {
+    @apply size-2.5 shrink-0 rounded-full bg-success ring-4 ring-success/15;
+  }
+
+  .room-card.busy .status-dot {
+    @apply bg-destructive ring-destructive/15;
+  }
+
+  .room-status {
+    @apply text-xs font-medium text-muted-foreground;
+  }
+
+  .room-meta {
+    @apply mt-1 flex min-w-0 flex-wrap gap-1;
+  }
+
+  .room-person {
+    @apply max-w-full truncate rounded-full border bg-secondary px-2 py-0.5 text-[0.7rem] leading-tight font-medium text-secondary-foreground;
+  }
+
+  .room-group {
+    @apply border-transparent bg-primary-soft text-primary-soft-foreground;
+  }
+
+  .room-detail-content {
+    @apply grid gap-2 text-sm;
+  }
+
+  .room-detail-content p {
+    @apply flex flex-wrap gap-x-2 border-b pb-2 last:border-b-0;
+  }
+
+  .room-detail-content strong {
+    @apply font-medium text-muted-foreground;
+  }
+}

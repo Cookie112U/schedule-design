@@ -17,25 +17,6 @@ const scheduleTransform = window.ScheduleTransform;
 const errorCatalog = window.ScheduleErrorCatalog;
 const { start: startHolidayParticles } = window.ScheduleHolidayParticles;
 
-function openDialog(dialog) {
-  if (!dialog || dialog.open) return;
-  if (typeof dialog.showModal === "function") {
-    dialog.showModal();
-    return;
-  }
-  dialog.setAttribute("open", "");
-  dialog.setAttribute("role", "dialog");
-  dialog.setAttribute("aria-modal", "true");
-  document.documentElement.classList.add("modal-open");
-}
-
-function closeDialog(dialog) {
-  if (!dialog) return;
-  if (typeof dialog.close === "function") dialog.close();
-  else dialog.removeAttribute("open");
-  if (!document.querySelector("dialog[open]")) document.documentElement.classList.remove("modal-open");
-}
-
 const app = document.querySelector(".app");
 const calendarGrid = document.querySelector("#calendarGrid");
 const weekStrip = document.querySelector("#weekStrip");
@@ -80,6 +61,7 @@ const roomDetailTitle = document.querySelector("#roomDetailTitle");
 const roomDetailContent = document.querySelector("#roomDetailContent");
 const holidayAdminButton = document.querySelector("#holidayAdminButton");
 const holidayAdminModal = document.querySelector("#holidayAdminModal");
+const dialogs = Array.from(document.querySelectorAll("dialog.modal"));
 
 const today = new Date();
 today.setHours(0, 0, 0, 0);
@@ -103,16 +85,87 @@ const apiState = {
   catalogsLoaded: false
 };
 
+function isDialogOpen(dialog) {
+  return Boolean(dialog && (dialog.open || dialog.hasAttribute("open")));
+}
+
+function syncDialogLock() {
+  document.documentElement.classList.toggle("dialog-lock", dialogs.some(isDialogOpen));
+  document.documentElement.classList.toggle("dialog-fallback-lock", dialogs.some((dialog) => dialog.classList.contains("dialog-fallback-open")));
+}
+
+function openDialogFallback(dialog) {
+  dialog.setAttribute("open", "");
+  dialog.setAttribute("aria-modal", "true");
+  dialog.classList.add("dialog-fallback-open");
+  window.requestAnimationFrame(() => {
+    dialog.querySelector("button, input, select, [tabindex]:not([tabindex='-1'])")?.focus();
+  });
+}
+
+function openDialog(dialog) {
+  if (!dialog || isDialogOpen(dialog)) return;
+  try {
+    if (typeof dialog.showModal === "function") {
+      dialog.showModal();
+    } else {
+      openDialogFallback(dialog);
+    }
+  } catch {
+    openDialogFallback(dialog);
+  }
+  syncDialogLock();
+}
+
+function closeDialog(dialog) {
+  if (!dialog || !isDialogOpen(dialog)) return;
+  if (typeof dialog.close === "function" && !dialog.classList.contains("dialog-fallback-open")) {
+    dialog.close();
+  } else {
+    dialog.removeAttribute("open");
+    dialog.removeAttribute("aria-modal");
+    dialog.classList.remove("dialog-fallback-open");
+  }
+  syncDialogLock();
+}
+
+dialogs.forEach((dialog) => {
+  dialog.addEventListener("close", syncDialogLock);
+  dialog.addEventListener("cancel", () => window.setTimeout(syncDialogLock, 0));
+  dialog.addEventListener("keydown", (event) => {
+    if (!dialog.classList.contains("dialog-fallback-open")) return;
+    if (event.key === "Escape") {
+      event.preventDefault();
+      closeDialog(dialog);
+      return;
+    }
+    if (event.key !== "Tab") return;
+    const focusable = Array.from(dialog.querySelectorAll("button:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex='-1'])"));
+    if (!focusable.length) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  });
+});
+
 const defaults = {
   mode: "student",
   selectedEntity: "",
   lastSelectedByMode: { student: "", teacher: "" },
   selectedDate: toDateKey(today),
   visibleDate: toDateKey(new Date(today.getFullYear(), today.getMonth(), 1)),
-  theme: "light",
+  theme: window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light",
   size: "medium",
   width: "standard",
   output: "bottom",
+  favoriteSide: "right",
+  mobileCalendarView: "week",
   accent: accentColors[0],
   building: "",
   pair: "",
@@ -150,6 +203,14 @@ const availableWidths = new Set(["compact", "standard", "full"]);
 if (!availableWidths.has(state.width)) {
   state.width = defaults.width;
 }
+const availableFavoriteSides = new Set(["left", "right"]);
+if (!availableFavoriteSides.has(state.favoriteSide)) {
+  state.favoriteSide = defaults.favoriteSide;
+}
+const availableMobileCalendarViews = new Set(["week", "month"]);
+if (!availableMobileCalendarViews.has(state.mobileCalendarView)) {
+  state.mobileCalendarView = defaults.mobileCalendarView;
+}
 
 let scheduleWatcherErrorShown = false;
 let stopScheduleWatcher = null;
@@ -157,7 +218,7 @@ let catalogLoadRequestId = 0;
 let roomsLoadRequestId = 0;
 let catalogRefreshTimer = 0;
 let roomsRefreshTimer = 0;
-const scheduleMetaFingerprints = new Map();
+let pendingFavoriteRemoval = { key: "", until: 0 };
 
 function saveState() {
   writeSavedState({
@@ -170,6 +231,8 @@ function saveState() {
     size: state.size,
     width: state.width,
     output: state.output,
+    favoriteSide: state.favoriteSide,
+    mobileCalendarView: state.mobileCalendarView,
     accent: state.accent,
     building: state.building,
     pair: state.pair,
@@ -289,41 +352,7 @@ function roomCacheScope() {
 }
 
 function roomCacheKey(dateKey) {
-  return `rooms-v3:${roomCacheScope()}:${dateKey}`;
-}
-
-function formatNoticeDate(dateKey) {
-  const [year, month, day] = String(dateKey || "").slice(0, 10).split("-");
-  return year && month && day ? `${day}.${month}.${year}` : String(dateKey || "");
-}
-
-function formatNoticeTimestamp(value) {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "";
-  return new Intl.DateTimeFormat("ru-RU", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit"
-  }).format(date);
-}
-
-function announceScheduleMeta(meta, dateKey) {
-  if (!meta || !dateKey) return;
-  const count = Number(meta.countOfChanges ?? meta.count_of_changes);
-  const lastChange = String(meta.lastChange || meta.last_change || "");
-  if (!Number.isFinite(count) && !lastChange) return;
-
-  const fingerprint = `${lastChange}|${Number.isFinite(count) ? count : ""}`;
-  if (scheduleMetaFingerprints.get(dateKey) === fingerprint) return;
-  scheduleMetaFingerprints.set(dateKey, fingerprint);
-
-  const details = [];
-  if (Number.isFinite(count)) details.push(`количество изменений: ${count}`);
-  const changedAt = formatNoticeTimestamp(lastChange);
-  if (changedAt) details.push(`обновлено: ${changedAt}`);
-  showMessage(`Расписание на ${formatNoticeDate(dateKey)} обновлено${details.length ? `. ${details.join("; ")}` : ""}`);
+  return `rooms-v2:${roomCacheScope()}:${dateKey}`;
 }
 
 function persistRoomCache() {
@@ -400,6 +429,13 @@ function chooseAvailableEntity(entities) {
 function toggleFavorite(entity, mode = state.mode) {
   const key = favoriteKey(entity, mode);
   if (isFavorite(entity, mode)) {
+    const now = Date.now();
+    if (pendingFavoriteRemoval.key !== key || pendingFavoriteRemoval.until < now) {
+      pendingFavoriteRemoval = { key, until: now + 3000 };
+      showMessage("Нажмите звезду ещё раз, чтобы убрать из избранного");
+      return;
+    }
+    pendingFavoriteRemoval = { key: "", until: 0 };
     state.favorites = state.favorites.filter((item) => item !== key);
   } else {
     const sameMode = state.favorites
@@ -430,8 +466,13 @@ function closeSelect() {
 function updateTrigger() {
   const placeholder = state.mode === "student" ? "Выберите группу" : "Выберите преподавателя";
   entityTriggerText.textContent = state.selectedEntity || placeholder;
-  selectedFavorite.textContent = state.selectedEntity && isFavorite(state.selectedEntity) ? "★" : "☆";
+  const favorite = Boolean(state.selectedEntity && isFavorite(state.selectedEntity));
+  selectedFavorite.textContent = favorite ? "★" : "☆";
+  selectedFavorite.classList.toggle("active", favorite);
+  selectedFavorite.setAttribute("aria-label", favorite ? "Убрать из избранного" : "Добавить в избранное");
 }
+
+const checkIconMarkup = '<svg class="select-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5" /></svg>';
 
 function addOption(entity) {
   const star = createElement("button", `favorite-button${isFavorite(entity) ? " active" : ""}`, isFavorite(entity) ? "★" : "☆");
@@ -442,10 +483,15 @@ function addOption(entity) {
     toggleFavorite(entity);
   });
 
-  const button = createElement("button", "select-option");
+  const isSelected = entity === state.selectedEntity;
+  const option = createElement("div", `select-option${isSelected ? " active" : ""}`);
+  option.setAttribute("role", "option");
+  option.setAttribute("aria-selected", String(isSelected));
+
+  const button = createElement("button", "select-option-main");
   button.type = "button";
-  button.classList.toggle("active", entity === state.selectedEntity);
-  button.append(star, createElement("strong", "", entity));
+  button.append(createElement("span", "truncate", entity));
+  if (isSelected) button.insertAdjacentHTML("beforeend", checkIconMarkup);
   button.addEventListener("click", () => {
     state.selectedEntity = entity;
     state.lastSelectedByMode[state.mode] = entity;
@@ -454,7 +500,8 @@ function addOption(entity) {
     updateTrigger();
     closeSelect();
   });
-  entityOptions.append(button);
+  option.append(star, button);
+  entityOptions.append(option);
 }
 
 function addGroupTitle(text) {
@@ -527,7 +574,7 @@ function resetTimeSlotsForDate() {
 }
 
 function refreshRoomsIfOpen(force = false) {
-  if (!roomsModal.open) return;
+  if (!isDialogOpen(roomsModal)) return;
   window.clearTimeout(roomsRefreshTimer);
   roomsRefreshTimer = window.setTimeout(() => renderRooms({ force }), 60);
 }
@@ -553,9 +600,12 @@ function renderCalendar() {
     const button = createElement("button", [
       "week-date",
       sameDate(date, state.selectedDate) ? "active" : "",
+      sameDate(date, today) ? "today" : "",
       hasScheduleDate(date) ? "has-schedule" : ""
-    ].filter(Boolean).join(" "), String(date.getDate()));
+    ].filter(Boolean).join(" "));
     button.type = "button";
+    button.append(createElement("span", "date-number", String(date.getDate())));
+    button.setAttribute("aria-label", `${sameDate(date, today) ? "Сегодня, " : ""}${date.toLocaleDateString("ru-RU", { weekday: "long", day: "numeric", month: "long" })}`);
     button.addEventListener("click", () => selectDate(date));
 
     const item = createElement("div", "week-day");
@@ -663,11 +713,6 @@ function normalizeRoomLabel(value) {
   return /^каб/i.test(room) ? room : `каб. ${room}`;
 }
 
-function normalizeLessonRooms(lesson) {
-  const rooms = Array.isArray(lesson.rooms) && lesson.rooms.length ? lesson.rooms : [lesson.room];
-  return rooms.map(normalizeRoomLabel).filter(Boolean);
-}
-
 function lessonPlaceValue(lesson) {
   if (isLunchLesson(lesson)) return "";
   return lesson.place || [lesson.building, lesson.room].filter(Boolean).join(" ");
@@ -676,9 +721,9 @@ function lessonPlaceValue(lesson) {
 function createLessonPlace(className, lesson) {
   if (isLunchLesson(lesson)) return null;
   const building = normalizeBuildingLabel(lesson.building);
-  const rooms = normalizeLessonRooms(lesson);
+  const room = normalizeRoomLabel(lesson.room);
 
-  if (!building && !rooms.length) {
+  if (!building && !room) {
     const fallback = lessonPlaceValue(lesson);
     return fallback ? createElement("div", className, fallback) : null;
   }
@@ -686,7 +731,7 @@ function createLessonPlace(className, lesson) {
   const element = createElement("div", `${className} lesson-place`);
   const buildingLabel = createBuildingLabel(lesson.building, "lesson-building");
   if (buildingLabel) element.append(buildingLabel);
-  if (rooms.length) element.append(createElement("span", "lesson-room-number", rooms.join(", ")));
+  if (room) element.append(createElement("span", "lesson-room-number", room));
   return element;
 }
 
@@ -714,32 +759,6 @@ function renderLessons(target, lessons) {
       card.append(place);
     }
 
-    target.append(card);
-  });
-}
-
-function renderModalLessons(target, lessons) {
-  target.innerHTML = "";
-  target.className = "modal-schedule-list";
-
-  if (!lessons.length) {
-    renderInlineStatus(target, "На выбранную дату расписание не найдено");
-    return;
-  }
-
-  lessons.forEach((lesson) => {
-    const card = createElement("article", "modal-lesson-card");
-    const top = createElement("div", "modal-lesson-top");
-    top.append(
-      createElement("span", "modal-lesson-number", lesson.lesson || "—"),
-      createElement("span", "modal-lesson-time", isLunchLesson(lesson) ? "" : lesson.time),
-      createElement("span", "modal-lesson-side", lessonSideValue(lesson))
-    );
-
-    const bottom = createElement("div", "modal-lesson-bottom");
-    bottom.append(createElement("div", "modal-lesson-subject", lesson.discipline || "Занятие"));
-    bottom.append(createLessonPlace("modal-lesson-place", lesson) || createElement("div", "modal-lesson-place"));
-    card.append(top, bottom);
     target.append(card);
   });
 }
@@ -817,7 +836,7 @@ async function showSchedule() {
         ? `Группа ${state.selectedEntity}`
         : `Преподаватель ${state.selectedEntity}`;
       setModalDateLine(state.selectedDate);
-      renderModalLessons(modalLessonList, lessons);
+      renderLessons(modalLessonList, lessons);
       openDialog(scheduleModal);
       return;
     }
@@ -837,7 +856,7 @@ async function showSchedule() {
           ? `Группа ${state.selectedEntity}`
           : `Преподаватель ${state.selectedEntity}`;
         setModalDateLine(state.selectedDate);
-        renderModalLessons(modalLessonList, lessons);
+        renderLessons(modalLessonList, lessons);
         openDialog(scheduleModal);
         return;
       }
@@ -864,12 +883,17 @@ function renderColorButtons() {
     button.type = "button";
     button.style.setProperty("--dot", color);
     button.setAttribute("aria-label", `Цвет ${index + 1}`);
+    button.setAttribute("aria-pressed", String(color === state.accent));
     button.addEventListener("click", () => {
       state.accent = color;
       applySettings();
       saveState();
-      colorGrid.querySelectorAll(".color-dot").forEach((item) => item.classList.remove("active"));
+      colorGrid.querySelectorAll(".color-dot").forEach((item) => {
+        item.classList.remove("active");
+        item.setAttribute("aria-pressed", "false");
+      });
       button.classList.add("active");
+      button.setAttribute("aria-pressed", "true");
     });
     colorGrid.append(button);
   });
@@ -896,7 +920,7 @@ function renderBuildingButtons() {
   const buildings = currentBuildings();
 
   if (!apiState.catalogsLoaded) {
-    const button = createElement("button", "setting-pill active", "Загрузка...");
+    const button = createElement("button", "segment active", "Загрузка...");
     button.type = "button";
     button.disabled = true;
     buildingToggle.append(button);
@@ -904,7 +928,7 @@ function renderBuildingButtons() {
   }
 
   if (!buildings.length) {
-    const button = createElement("button", "setting-pill active", "Корпуса не загружены");
+    const button = createElement("button", "segment active", "Корпуса не загружены");
     button.type = "button";
     button.disabled = true;
     buildingToggle.append(button);
@@ -917,7 +941,7 @@ function renderBuildingButtons() {
   }
 
   buildings.forEach((building) => {
-    const button = createElement("button", `setting-pill building-pill${building.number === state.building ? " active" : ""}`);
+    const button = createElement("button", `segment building-pill${building.number === state.building ? " active" : ""}`);
     button.append(createBuildingLabel(building.name || `${building.number} корпус`) || document.createTextNode(building.name || `${building.number} корпус`));
     button.type = "button";
     button.dataset.building = building.number;
@@ -1131,19 +1155,32 @@ function applySettings() {
   app.dataset.theme = state.theme;
   app.dataset.size = state.size;
   app.dataset.width = state.width;
+  app.dataset.favoriteSide = state.favoriteSide;
+  app.dataset.mobileCalendarView = state.mobileCalendarView;
   document.documentElement.dataset.theme = state.theme;
+  document.documentElement.classList.toggle("dark", state.theme === "dark");
   document.documentElement.dataset.size = state.size;
   document.documentElement.dataset.width = state.width;
-  document.documentElement.style.setProperty("--accent", state.accent);
-  document.documentElement.style.setProperty("--accent-ink", accentInkFor(state.accent));
+  if (state.accent === accentColors[0]) {
+    // Фирменный акцент: цвет берётся из темы (primary-600 / primary-400 в тёмной).
+    document.documentElement.style.removeProperty("--user-accent");
+    document.documentElement.style.removeProperty("--user-accent-ink");
+  } else {
+    document.documentElement.style.setProperty("--user-accent", state.accent);
+    document.documentElement.style.setProperty("--user-accent-ink", accentInkFor(state.accent));
+  }
   app.dataset.holiday = holiday;
   startHolidayParticles(holiday);
-  document.querySelectorAll("[data-setting]").forEach((button) => {
-    button.classList.toggle("active", state[button.dataset.setting] === button.dataset.value);
+  document.querySelectorAll("[data-setting]").forEach((radio) => {
+    radio.checked = state[radio.dataset.setting] === radio.dataset.value;
   });
   renderBuildingButtons();
   pairSelect.value = state.pair;
-  modeButtons.forEach((button) => button.classList.toggle("active", button.dataset.mode === state.mode));
+  modeButtons.forEach((button) => {
+    const isActive = button.dataset.mode === state.mode;
+    button.classList.toggle("active", isActive);
+    button.setAttribute("aria-pressed", String(isActive));
+  });
   document.querySelectorAll("[data-holiday]").forEach((button) => {
     button.classList.toggle("active", button.dataset.holiday === state.holidayMode);
   });
@@ -1175,9 +1212,8 @@ function applyCatalogs(catalogs) {
   apiState.classrooms = catalogs.classrooms || apiState.classrooms || [];
   apiState.dictionaries = catalogs.dictionaries;
   setScheduleUrl(catalogs.meta?.url || "");
-  apiState.scheduleDates = new Set(catalogs.dates || []);
+  if (catalogs.dates?.length) apiState.scheduleDates = new Set(catalogs.dates);
   apiState.catalogsLoaded = true;
-  announceScheduleMeta(catalogs.meta, selectedDateKey());
 
   const entities = getEntities();
   const nextEntity = chooseAvailableEntity(entities);
@@ -1218,6 +1254,21 @@ function applyCatalogs(catalogs) {
   }
 }
 
+// Доступные даты (последние добавленные расписания) берутся из /api/schedule/legacy
+// независимо от справочников выбранной даты: на дату без расписания справочники
+// приходят 404, но календарь всё равно должен показать, где расписание есть.
+async function loadAvailableDates({ force = false } = {}) {
+  try {
+    const dates = await scheduleService.getScheduleDates({ days: 180, force });
+    apiState.scheduleDates = new Set(dates);
+    renderCalendar();
+  } catch (error) {
+    if (error?.status === 404) return;
+    error.publicKey = error.publicKey || "CATALOG_PARTIAL";
+    showMessage(apiErrorText(error, "Не удалось загрузить список дат с расписанием"));
+  }
+}
+
 async function loadCatalogs({ force = false } = {}) {
   const requestId = ++catalogLoadRequestId;
   const dateKey = selectedDateKey();
@@ -1237,6 +1288,7 @@ function handleScheduleDateAdded(dateKey) {
   apiState.scheduleDates.add(dateKey);
   scheduleService.clearDateCache(dateKey);
   renderCalendar();
+  if (dateKey === selectedDateKey()) refreshCatalogsForDate(true);
   showMessage(`Появилось расписание на ${dateKey}`);
 }
 
@@ -1250,11 +1302,6 @@ function handleScheduleNotice(payload = {}) {
     if (dateKey === selectedDateKey()) {
       hideResult();
     }
-  }
-
-  if (payload.countOfChanges !== undefined || payload.count_of_changes !== undefined || payload.lastChange || payload.last_change) {
-    announceScheduleMeta(payload, dateKey || selectedDateKey());
-    return;
   }
 
   const fallback = payload.event_type === "schedule_updated"
@@ -1354,24 +1401,10 @@ document.querySelectorAll("[data-close]").forEach((button) => {
   button.addEventListener("click", () => closeDialog(document.querySelector(`#${button.dataset.close}`)));
 });
 
-document.querySelectorAll('#settingsModal [value="close"]').forEach((button) => {
-  button.addEventListener("click", (event) => {
-    event.preventDefault();
-    closeDialog(settingsModal);
-  });
-});
-
-document.addEventListener("keydown", (event) => {
-  if (event.key !== "Escape") return;
-  const openDialogs = Array.from(document.querySelectorAll("dialog[open]"));
-  const fallbackDialog = openDialogs[openDialogs.length - 1];
-  if (fallbackDialog && typeof fallbackDialog.close !== "function") closeDialog(fallbackDialog);
-});
-
-document.querySelectorAll("[data-setting]").forEach((button) => {
-  button.addEventListener("click", () => {
-    const setting = button.dataset.setting;
-    state[setting] = button.dataset.value;
+document.querySelectorAll("[data-setting]").forEach((radio) => {
+  radio.addEventListener("change", () => {
+    const setting = radio.dataset.setting;
+    state[setting] = radio.dataset.value;
     if (setting === "output") hideResult();
     applySettings();
     saveState();
@@ -1384,13 +1417,13 @@ buildingToggle.addEventListener("click", (event) => {
   state.building = button.dataset.building;
   applySettings();
   saveState();
-  if (roomsModal.open) renderRooms();
+  if (isDialogOpen(roomsModal)) renderRooms();
 });
 
 pairSelect.addEventListener("change", (event) => {
   state.pair = event.target.value;
   saveState();
-  if (roomsModal.open) renderRooms();
+  if (isDialogOpen(roomsModal)) renderRooms();
 });
 
 document.querySelectorAll("[data-holiday]").forEach((button) => {
@@ -1458,5 +1491,6 @@ renderPairOptions();
 updateDownloadButton();
 
 if (!isAuditMode) {
+  loadAvailableDates().then(startScheduleWatcher);
   loadCatalogs();
 }

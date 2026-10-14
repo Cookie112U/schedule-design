@@ -1,0 +1,48 @@
+@layer base {
+  /* В Tailwind 4 рамка по умолчанию — currentColor; возвращаем токен. */
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--border);
+  }
+
+  :root {
+    color-scheme: light;
+  }
+
+  :root.dark {
+    color-scheme: dark;
+  }
+
+  /* Raleway по умолчанию рисует «старые» цифры — для дат и времени нужны лицевые. */
+  body {
+    @apply bg-background font-sans text-foreground antialiased lining-nums;
+  }
+
+  .app {
+    padding-right: var(--safe-right);
+    padding-left: var(--safe-left);
+  }
+
+  html.dialog-lock,
+  html.dialog-lock body {
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+
+  /* Preflight Tailwind 4 обнуляет margin у <dialog> и ломает центрирование. */
+  dialog {
+    margin: auto;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
