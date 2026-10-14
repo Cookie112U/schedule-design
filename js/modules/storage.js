@@ -3,6 +3,7 @@ const STORAGE_KEY = "nttek-schedule-ui-v2";
 const ROOM_CACHE_KEY = `${STORAGE_KEY}:rooms`;
 const SCHEDULE_META_KEY = `${STORAGE_KEY}:schedule-meta`;
 const SCHEDULE_DATA_KEY = `${STORAGE_KEY}:schedule-data`;
+const CATALOG_CACHE_KEY = `${STORAGE_KEY}:catalogs`;
 
 function readSavedState() {
   try {
@@ -72,12 +73,31 @@ function writeScheduleDataCache(cache) {
   }
 }
 
+function readCatalogCache() {
+  try {
+    return JSON.parse(localStorage.getItem(CATALOG_CACHE_KEY)) || {};
+  } catch {
+    return {};
+  }
+}
+
+function writeCatalogCache(cache) {
+  try {
+    localStorage.setItem(CATALOG_CACHE_KEY, JSON.stringify(cache));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 return {
   readSavedState,
   readRoomCache,
+  readCatalogCache,
   readScheduleDataCache,
   readScheduleMetaCache,
   writeRoomCache,
+  writeCatalogCache,
   writeScheduleDataCache,
   writeScheduleMetaCache,
   writeSavedState

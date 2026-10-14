@@ -10,9 +10,11 @@ const { activeHoliday } = window.ScheduleHoliday;
 const {
   readSavedState,
   readRoomCache,
+  readCatalogCache,
   readScheduleDataCache,
   readScheduleMetaCache,
   writeRoomCache,
+  writeCatalogCache,
   writeScheduleDataCache,
   writeScheduleMetaCache,
   writeSavedState
@@ -196,12 +198,15 @@ if (state.selectedEntity && !state.lastSelectedByMode[state.mode]) {
 }
 
 const roomCache = typeof readRoomCache === "function" ? readRoomCache() : {};
+const catalogCache = typeof readCatalogCache === "function" ? readCatalogCache() : {};
 const scheduleDataCache = typeof readScheduleDataCache === "function" ? readScheduleDataCache() : {};
 const scheduleMetaCache = typeof readScheduleMetaCache === "function" ? readScheduleMetaCache() : {};
 const roomCacheTtlMs = 6 * 60 * 60 * 1000;
 const maxRoomCacheDates = 20;
 const scheduleDataCacheTtlMs = 24 * 60 * 60 * 1000;
 const maxScheduleDataEntries = 40;
+const catalogCacheTtlMs = 24 * 60 * 60 * 1000;
+const maxCatalogCacheDates = 20;
 
 const isAuditMode = new URLSearchParams(window.location.search).has("audit");
 const availableHolidayModes = new Set(Array.from(document.querySelectorAll("[data-holiday]")).map((button) => button.dataset.holiday));
@@ -471,6 +476,10 @@ function processScheduleMeta(meta, fallbackDateKey = selectedDateKey()) {
   if (changed) {
     scheduleService.clearDateCache(dateKey);
     invalidateScheduleData(dateKey);
+    if (catalogCache[dateKey]) {
+      delete catalogCache[dateKey];
+      writeCatalogCache(catalogCache);
+    }
     if (dateKey === selectedDateKey()) hideResult();
     showMessage(`Расписание на выбранную дату ${formatScheduleDate(dateKey)} было изменено (изменений: ${count})`);
   }
@@ -1322,7 +1331,47 @@ function clearCatalogsAfterDateError() {
   renderBuildingButtons();
   renderCalendar();
 }
-function applyCatalogs(catalogs) {
+
+function persistCatalogs(dateKey, catalogs) {
+  catalogCache[dateKey] = {
+    savedAt: Date.now(),
+    count: Number(catalogs.meta?.countOfChanges ?? catalogs.meta?.count_of_changes),
+    catalogs: {
+      groups: catalogs.groups || {},
+      teachers: catalogs.teachers || [],
+      buildings: catalogs.buildings || [],
+      classrooms: catalogs.classrooms || [],
+      dictionaries: catalogs.dictionaries || null,
+      dates: catalogs.dates || [],
+      meta: catalogs.meta || null,
+      errors: [],
+      optionalErrors: []
+    }
+  };
+  Object.entries(catalogCache)
+    .sort(([, left], [, right]) => Number(right.savedAt || 0) - Number(left.savedAt || 0))
+    .slice(maxCatalogCacheDates)
+    .forEach(([key]) => delete catalogCache[key]);
+  writeCatalogCache(catalogCache);
+}
+
+function restoreCachedCatalogs(dateKey) {
+  const cached = catalogCache[dateKey];
+  const knownCount = Number(scheduleMetaCache[dateKey]?.count);
+  const expired = !cached || Date.now() - Number(cached.savedAt || 0) > catalogCacheTtlMs;
+  const changed = Number.isFinite(knownCount) && Number(cached?.count) !== knownCount;
+  if (expired || changed) {
+    if (cached) {
+      delete catalogCache[dateKey];
+      writeCatalogCache(catalogCache);
+    }
+    return false;
+  }
+  applyCatalogs(cached.catalogs, { persist: false });
+  return true;
+}
+
+function applyCatalogs(catalogs, { persist = true } = {}) {
   apiState.groupsByBuilding = catalogs.groups || {};
   apiState.groups = Object.values(apiState.groupsByBuilding).flat().sort(sortRu);
   apiState.teachers = (catalogs.teachers || []).sort(sortRu);
@@ -1347,6 +1396,7 @@ function applyCatalogs(catalogs) {
   renderBuildingButtons();
   renderCalendar();
   prefetchSelectedSchedule();
+  if (persist) persistCatalogs(selectedDateKey(), catalogs);
 
   if (catalogs.errors?.length) {
     showMessage(apiErrorText(catalogs.errors[0], "Не удалось загрузить списки групп и преподавателей"));
@@ -1399,7 +1449,7 @@ async function loadCatalogs({ force = false } = {}) {
     applyCatalogs(catalogs);
   } catch (error) {
     if (requestId !== catalogLoadRequestId || dateKey !== selectedDateKey()) return;
-    clearCatalogsAfterDateError();
+    if (!apiState.groups.length && !apiState.teachers.length) clearCatalogsAfterDateError();
     showMessage(apiErrorText(error, "Не удалось загрузить публичные справочники"));
   }
 }
@@ -1610,6 +1660,21 @@ renderCalendar();
 renderColorButtons();
 renderPairOptions();
 updateDownloadButton();
+restoreCachedCatalogs(selectedDateKey());
+
+let interfaceRevealed = false;
+function revealInterface() {
+  if (interfaceRevealed) return;
+  interfaceRevealed = true;
+  window.requestAnimationFrame(() => document.documentElement.classList.add("ui-ready"));
+}
+
+if (document.fonts?.ready) {
+  document.fonts.ready.then(revealInterface, revealInterface);
+  window.setTimeout(revealInterface, 900);
+} else {
+  revealInterface();
+}
 
 if (!isAuditMode) {
   loadAvailableDates().then(startScheduleWatcher);

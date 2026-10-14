@@ -72,6 +72,7 @@ test("teacher catalog keeps Воинкова and prefetched schedule opens local
   expect(api.teacherRequests()).toBe(1);
 
   await page.reload({ waitUntil: "domcontentloaded" });
+  await expect(page.locator("html")).toHaveClass(/ui-ready/);
   await expect(page.locator("#showSchedule")).toBeEnabled();
   const cachedStartedAt = Date.now();
   await page.locator("#showSchedule").click();
@@ -90,4 +91,45 @@ test("increased countOfChanges shows a user notification", async ({ page }) => {
   }, { key: dateKey });
   await page.goto(baseURL, { waitUntil: "domcontentloaded" });
   await expect(page.locator(".toast", { hasText: "было изменено" })).toBeVisible({ timeout: 15000 });
+});
+
+test("cached catalogs survive a temporary API failure after reload", async ({ page }) => {
+  await mockLegacySchedule(page);
+  await page.goto(baseURL, { waitUntil: "domcontentloaded" });
+  await page.locator('[data-mode="teacher"]').click();
+  await page.locator("#entityTrigger").click();
+  await page.locator("#entitySearch").fill("Воинкова");
+  await page.locator(".select-option-main", { hasText: "Воинкова НА" }).click();
+
+  await page.unrouteAll({ behavior: "wait" });
+  await page.route("**/api/schedule/legacy**", (route) => route.abort("failed"));
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await expect(page.locator("html")).toHaveClass(/ui-ready/);
+  await expect(page.locator("#entityTrigger")).toContainText("Воинкова НА");
+  await page.locator("#entityTrigger").click();
+  await page.locator("#entitySearch").fill("Воинкова");
+  await expect(page.locator(".select-option-main", { hasText: "Воинкова НА" })).toBeVisible();
+});
+
+test("first paint stays hidden until the saved dark theme is ready", async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem("nttek-schedule-ui-v2", JSON.stringify({ theme: "dark", holidayMode: "new-year" }));
+  });
+  await page.route("**/css/app.css*", async (route) => {
+    await new Promise((resolve) => setTimeout(resolve, 250));
+    await route.continue();
+  });
+
+  const navigation = page.goto(baseURL, { waitUntil: "domcontentloaded" });
+  await page.waitForTimeout(80);
+  const earlyPaint = await page.evaluate(() => ({
+    ready: document.documentElement.classList.contains("ui-ready"),
+    background: getComputedStyle(document.documentElement).backgroundColor,
+    bodyVisibility: document.body ? getComputedStyle(document.body).visibility : "hidden"
+  }));
+  expect(earlyPaint.ready).toBeFalsy();
+  expect(earlyPaint.bodyVisibility).toBe("hidden");
+  expect(earlyPaint.background).not.toBe("rgb(255, 255, 255)");
+  await navigation;
+  await expect(page.locator("html")).toHaveClass(/ui-ready/);
 });

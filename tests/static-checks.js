@@ -429,6 +429,7 @@ function assertStorageFailureFallback() {
   assert.strictEqual(win.ScheduleStorage.writeRoomCache({}), false);
   assert.strictEqual(win.ScheduleStorage.writeScheduleMetaCache({}), false);
   assert.strictEqual(win.ScheduleStorage.writeScheduleDataCache({}), false);
+  assert.strictEqual(win.ScheduleStorage.writeCatalogCache({}), false);
 }
 
 function assertTeacherNormalization() {
@@ -500,6 +501,10 @@ function assertSchedulePrefetchAndChangeNotice() {
   assert(/function prefetchSelectedSchedule/.test(app) && /loadScheduleWithCache\(params\)/.test(app), "выбранное расписание должно предварительно загружаться");
   assert(/pointerenter[\s\S]*prefetchEntitySchedule/.test(app), "предзагрузка должна начинаться до выбора пункта на поддерживаемых устройствах");
   assert(/readCachedSchedule/.test(app) && /writeScheduleDataCache/.test(app), "готовое расписание должно кешироваться между открытиями страницы");
+  assert(/restoreCachedCatalogs/.test(app) && /writeCatalogCache/.test(app), "последний корректный каталог должен переживать обновление страницы");
+  const html = read("index.html");
+  assert(/html:not\(\.ui-ready\) body \{ visibility: hidden; \}/.test(html), "интерфейс не должен показываться до применения темы и компонентов");
+  assert(/display=optional/.test(html), "веб-шрифты не должны поздно сдвигать уже показанную верстку");
   assert(/count > Number\(previous\.count\)/.test(app), "уведомление должно появляться только при увеличении countOfChanges");
   assert(/Расписание на выбранную дату/.test(app), "пользователь должен видеть сообщение об изменении выбранной даты");
 }
