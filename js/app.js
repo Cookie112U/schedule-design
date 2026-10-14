@@ -2,6 +2,7 @@ const {
   accentColors,
   monthNames,
   months,
+  normalizeRoomLabel,
   weekdays,
   weekdaysFull
 } = window.ScheduleData;
@@ -707,10 +708,11 @@ function createBuildingLabel(value, className = "building-label") {
   return element;
 }
 
-function normalizeRoomLabel(value) {
-  const room = String(value || "").trim();
-  if (!room) return "";
-  return /^каб/i.test(room) ? room : `каб. ${room}`;
+function normalizeLessonRooms(lesson) {
+  const rooms = Array.isArray(lesson?.rooms) && lesson.rooms.length
+    ? lesson.rooms
+    : [lesson?.room];
+  return rooms.map(normalizeRoomLabel).filter(Boolean);
 }
 
 function lessonPlaceValue(lesson) {
@@ -721,9 +723,9 @@ function lessonPlaceValue(lesson) {
 function createLessonPlace(className, lesson) {
   if (isLunchLesson(lesson)) return null;
   const building = normalizeBuildingLabel(lesson.building);
-  const room = normalizeRoomLabel(lesson.room);
+  const rooms = normalizeLessonRooms(lesson);
 
-  if (!building && !room) {
+  if (!building && !rooms.length) {
     const fallback = lessonPlaceValue(lesson);
     return fallback ? createElement("div", className, fallback) : null;
   }
@@ -731,7 +733,7 @@ function createLessonPlace(className, lesson) {
   const element = createElement("div", `${className} lesson-place`);
   const buildingLabel = createBuildingLabel(lesson.building, "lesson-building");
   if (buildingLabel) element.append(buildingLabel);
-  if (room) element.append(createElement("span", "lesson-room-number", room));
+  if (rooms.length) element.append(createElement("span", "lesson-room-number", rooms.join(", ")));
   return element;
 }
 

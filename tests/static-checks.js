@@ -429,6 +429,32 @@ function assertStorageFailureFallback() {
   assert.strictEqual(win.ScheduleStorage.writeRoomCache({}), false);
 }
 
+function assertRoomLabels() {
+  const win = {};
+  win.window = win;
+  const sandbox = { window: win };
+  vm.createContext(sandbox);
+  vm.runInContext(read("js/modules/data.js"), sandbox, { filename: "data.js" });
+  const normalize = win.ScheduleData.normalizeRoomLabel;
+
+  [
+    ["дистант", "дистант"],
+    ["каб. дистант", "дистант"],
+    ["КАБИНЕТ С-З", "С-З"],
+    ["а-з", "а-з"],
+    ["ч–з", "ч–з"],
+    ["улица", "улица"],
+    ["музей НТТЭК", "музей НТТЭК"],
+    ["22", "каб. 22"],
+    ["25-а", "каб. 25-а"],
+    ["лаб 5", "каб. лаб 5"],
+    ["каб. 18", "каб. 18"]
+  ].forEach(([input, expected]) => assert.strictEqual(normalize(input), expected, `неверная подпись аудитории: ${input}`));
+
+  const app = read("js/app.js");
+  assert(/lesson\.rooms/.test(app) && /rooms\.map\(normalizeRoomLabel\)/.test(app), "несколько аудиторий должны форматироваться по отдельности");
+}
+
 async function assertScheduleDatesFetching() {
   const app = read("js/app.js");
   assert(/async function loadAvailableDates/.test(app), "список доступных дат должен грузиться отдельно от справочников выбранной даты");
@@ -493,6 +519,7 @@ assertUiClassesAreBuilt();
 assertSettingsDialogScrolling();
 assertIosCompatibility();
 assertStorageFailureFallback();
+assertRoomLabels();
 assertDownloadAndRoomCacheSupport();
 assertErrorCatalog();
 assertScheduleDatesFetching().then(() => console.log("Static checks passed"), (error) => {
