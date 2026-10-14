@@ -122,6 +122,37 @@ test("saved theme and holiday are applied before app initialization", async ({ p
   await expect(page.locator("body")).toBeVisible();
 });
 
+test("all settings radio groups remain interactive", async ({ page }) => {
+  await mockLegacySchedule(page);
+  await page.goto(baseURL, { waitUntil: "domcontentloaded" });
+  await page.locator("#settingsButton").click();
+  const settings = page.locator("#settingsModal");
+  await expect(settings).toBeVisible();
+
+  const choices = [
+    ["theme", "dark", "theme"],
+    ["size", "small", "size"],
+    ["width", "compact", "width"],
+    ["output", "modal", "output"],
+    ["favoriteSide", "left", "favoriteSide"],
+    ["mobileCalendarView", "month", "mobileCalendarView"]
+  ];
+
+  for (const [name, value, stateKey] of choices) {
+    const radio = settings.locator(`input[name="${name}"][data-value="${value}"]`);
+    await radio.locator("..").click();
+    await expect(radio).toBeChecked();
+    const savedValue = await page.evaluate((key) => JSON.parse(localStorage.getItem("nttek-schedule-ui-v2") || "{}")[key], stateKey);
+    expect(savedValue).toBe(value);
+  }
+
+  await expect(page.locator(".app")).toHaveAttribute("data-theme", "dark");
+  await expect(page.locator(".app")).toHaveAttribute("data-size", "small");
+  await expect(page.locator(".app")).toHaveAttribute("data-width", "compact");
+  await expect(page.locator(".app")).toHaveAttribute("data-favorite-side", "left");
+  await expect(page.locator(".app")).toHaveAttribute("data-mobile-calendar-view", "month");
+});
+
 test("every holiday theme renders in light and dark modes", async ({ page, browserName }) => {
   test.skip(browserName !== "chromium", "visual matrix runs once; browser compatibility is covered separately");
   await mockLegacySchedule(page);

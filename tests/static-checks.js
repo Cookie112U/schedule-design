@@ -505,7 +505,8 @@ function assertSchedulePrefetchAndChangeNotice() {
   const html = read("index.html");
   assert(!/visibility:\s*hidden/.test(html), "страница не должна скрываться пустой заглушкой при обновлении");
   assert(/app\.dataset\.holiday = root\.dataset\.holiday/.test(html), "праздник должен применяться к app до первого кадра");
-  assert(/display=optional/.test(html), "веб-шрифты не должны поздно сдвигать уже показанную верстку");
+  assert(/Merriweather[^\"]+display=swap/.test(html) && /Raleway[^\"]+display=swap/.test(html), "должна сохраняться прежняя загрузка шрифтов Merriweather и Raleway");
+  assert((app.match(/\.holiday-option\[data-holiday\]/g) || []).length >= 2, "обработчики праздников должны назначаться только праздничным кнопкам");
   assert(/count > Number\(previous\.count\)/.test(app), "уведомление должно появляться только при увеличении countOfChanges");
   assert(/Расписание на выбранную дату/.test(app), "пользователь должен видеть сообщение об изменении выбранной даты");
 }

@@ -1308,7 +1308,7 @@ function applySettings() {
     button.classList.toggle("active", isActive);
     button.setAttribute("aria-pressed", String(isActive));
   });
-  document.querySelectorAll("[data-holiday]").forEach((button) => {
+  document.querySelectorAll(".holiday-option[data-holiday]").forEach((button) => {
     button.classList.toggle("active", button.dataset.holiday === state.holidayMode);
   });
 }
@@ -1597,7 +1597,7 @@ pairSelect.addEventListener("change", (event) => {
   if (isDialogOpen(roomsModal)) renderRooms();
 });
 
-document.querySelectorAll("[data-holiday]").forEach((button) => {
+document.querySelectorAll(".holiday-option[data-holiday]").forEach((button) => {
   button.addEventListener("click", () => {
     state.holidayMode = button.dataset.holiday;
     applySettings();
