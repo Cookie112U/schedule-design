@@ -9,10 +9,12 @@ function todayKey() {
 
 async function mockLegacySchedule(page, countOfChanges = 2) {
   const dateKey = todayKey();
+  let teacherRequests = 0;
   await page.route("**/api/schedule/legacy", (route) => route.fulfill({ json: [dateKey] }));
   await page.route("**/api/schedule/legacy/**", (route) => {
     const pathname = new URL(route.request().url()).pathname;
     if (pathname.includes("/teacher/")) {
+      teacherRequests += 1;
       return route.fulfill({ json: {
         "3": {
           building: { number: "КОРПУС 2", address: "(Садовая, 22)" },
@@ -34,7 +36,7 @@ async function mockLegacySchedule(page, countOfChanges = 2) {
       }
     } });
   });
-  return dateKey;
+  return { dateKey, teacherRequests: () => teacherRequests };
 }
 
 for (const viewport of [
@@ -53,7 +55,7 @@ for (const viewport of [
 }
 
 test("teacher catalog keeps Воинкова and prefetched schedule opens locally", async ({ page }) => {
-  await mockLegacySchedule(page);
+  const api = await mockLegacySchedule(page);
   await page.goto(baseURL, { waitUntil: "domcontentloaded" });
   await page.locator('[data-mode="teacher"]').click();
   await page.locator("#entityTrigger").click();
@@ -67,10 +69,19 @@ test("teacher catalog keeps Воинкова and prefetched schedule opens local
   await page.locator("#showSchedule").click();
   await expect(page.locator("#resultPanel:not(.hidden)")).toBeVisible();
   expect(Date.now() - startedAt).toBeLessThan(500);
+  expect(api.teacherRequests()).toBe(1);
+
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await expect(page.locator("#showSchedule")).toBeEnabled();
+  const cachedStartedAt = Date.now();
+  await page.locator("#showSchedule").click();
+  await expect(page.locator("#resultPanel:not(.hidden)")).toBeVisible();
+  expect(Date.now() - cachedStartedAt).toBeLessThan(300);
+  expect(api.teacherRequests()).toBe(1);
 });
 
 test("increased countOfChanges shows a user notification", async ({ page }) => {
-  const dateKey = await mockLegacySchedule(page, 2);
+  const { dateKey } = await mockLegacySchedule(page, 2);
 
   await page.addInitScript(({ key }) => {
     localStorage.setItem("nttek-schedule-ui-v2:schedule-meta", JSON.stringify({

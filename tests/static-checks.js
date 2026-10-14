@@ -428,6 +428,7 @@ function assertStorageFailureFallback() {
   assert.strictEqual(win.ScheduleStorage.writeSavedState({ theme: "dark" }), false);
   assert.strictEqual(win.ScheduleStorage.writeRoomCache({}), false);
   assert.strictEqual(win.ScheduleStorage.writeScheduleMetaCache({}), false);
+  assert.strictEqual(win.ScheduleStorage.writeScheduleDataCache({}), false);
 }
 
 function assertTeacherNormalization() {
@@ -496,7 +497,9 @@ async function assertLegacyMetaRefresh() {
 
 function assertSchedulePrefetchAndChangeNotice() {
   const app = read("js/app.js");
-  assert(/function prefetchSelectedSchedule/.test(app) && /scheduleService\.getWeekDay\(params\)/.test(app), "выбранное расписание должно предварительно загружаться");
+  assert(/function prefetchSelectedSchedule/.test(app) && /loadScheduleWithCache\(params\)/.test(app), "выбранное расписание должно предварительно загружаться");
+  assert(/pointerenter[\s\S]*prefetchEntitySchedule/.test(app), "предзагрузка должна начинаться до выбора пункта на поддерживаемых устройствах");
+  assert(/readCachedSchedule/.test(app) && /writeScheduleDataCache/.test(app), "готовое расписание должно кешироваться между открытиями страницы");
   assert(/count > Number\(previous\.count\)/.test(app), "уведомление должно появляться только при увеличении countOfChanges");
   assert(/Расписание на выбранную дату/.test(app), "пользователь должен видеть сообщение об изменении выбранной даты");
 }
@@ -517,6 +520,8 @@ function assertRoomLabels() {
     ["ч–з", "ч–з"],
     ["улица", "улица"],
     ["музей НТТЭК", "музей НТТЭК"],
+    ["кор 1 каб 21", "кор 1 каб 21"],
+    ["каб. кор 2 каб 20", "кор 2 каб 20"],
     ["22", "каб. 22"],
     ["25-а", "каб. 25-а"],
     ["лаб 5", "каб. лаб 5"],

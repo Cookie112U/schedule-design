@@ -26,7 +26,8 @@ function normalizeRoomLabel(value) {
     .replace(/\s*-\s*/g, "-")
     .replace(/\s+/g, " ");
   const isNonCabinetPlace = /^(?:с-з|а-з|ч-з)(?:$|[-\s])/.test(comparable)
-    || /^(?:дистант|улица|музей)(?:$|\s)/.test(comparable);
+    || /^(?:дистант|улица|музей)(?:$|\s)/.test(comparable)
+    || /^кор(?:пус)?\s*\d+\s+каб(?:инет)?\.?\s*\S+/i.test(comparable);
 
   if (isNonCabinetPlace) return withoutCabinet;
   return /^каб/i.test(room) ? room : `каб. ${room}`;

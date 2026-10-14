@@ -10,8 +10,10 @@ const { activeHoliday } = window.ScheduleHoliday;
 const {
   readSavedState,
   readRoomCache,
+  readScheduleDataCache,
   readScheduleMetaCache,
   writeRoomCache,
+  writeScheduleDataCache,
   writeScheduleMetaCache,
   writeSavedState
 } = window.ScheduleStorage;
@@ -194,9 +196,12 @@ if (state.selectedEntity && !state.lastSelectedByMode[state.mode]) {
 }
 
 const roomCache = typeof readRoomCache === "function" ? readRoomCache() : {};
+const scheduleDataCache = typeof readScheduleDataCache === "function" ? readScheduleDataCache() : {};
 const scheduleMetaCache = typeof readScheduleMetaCache === "function" ? readScheduleMetaCache() : {};
 const roomCacheTtlMs = 6 * 60 * 60 * 1000;
 const maxRoomCacheDates = 20;
+const scheduleDataCacheTtlMs = 24 * 60 * 60 * 1000;
+const maxScheduleDataEntries = 40;
 
 const isAuditMode = new URLSearchParams(window.location.search).has("audit");
 const availableHolidayModes = new Set(Array.from(document.querySelectorAll("[data-holiday]")).map((button) => button.dataset.holiday));
@@ -405,6 +410,50 @@ function formatScheduleDate(dateKey) {
   return year && month && day ? `${day}.${month}.${year}` : String(dateKey || "");
 }
 
+function scheduleDataKey({ type, query, dateKey }) {
+  return JSON.stringify([dateKey, type, String(query || "").trim().toLocaleLowerCase("ru-RU")]);
+}
+
+function persistScheduleDataCache() {
+  const entries = Object.entries(scheduleDataCache)
+    .sort(([, left], [, right]) => Number(right.savedAt || 0) - Number(left.savedAt || 0));
+  entries.slice(maxScheduleDataEntries).forEach(([key]) => delete scheduleDataCache[key]);
+  writeScheduleDataCache(scheduleDataCache);
+}
+
+function invalidateScheduleData(dateKey) {
+  Object.keys(scheduleDataCache).forEach((key) => {
+    if (key.includes(dateKey)) delete scheduleDataCache[key];
+  });
+  persistScheduleDataCache();
+}
+
+function readCachedSchedule(params) {
+  const key = scheduleDataKey(params);
+  const cached = scheduleDataCache[key];
+  const currentCount = Number(scheduleMetaCache[params.dateKey]?.count);
+  const expired = !cached || Date.now() - Number(cached.savedAt || 0) > scheduleDataCacheTtlMs;
+  const changed = !Number.isFinite(currentCount) || Number(cached?.count) !== currentCount;
+  if (!expired && !changed && Array.isArray(cached.lessons)) return cached.lessons;
+  if (cached) {
+    delete scheduleDataCache[key];
+    persistScheduleDataCache();
+  }
+  return null;
+}
+
+async function loadScheduleWithCache(params) {
+  const cached = readCachedSchedule(params);
+  if (cached) return cached;
+  const lessons = await scheduleService.getWeekDay(params);
+  const count = Number(scheduleMetaCache[params.dateKey]?.count);
+  if (Number.isFinite(count)) {
+    scheduleDataCache[scheduleDataKey(params)] = { savedAt: Date.now(), count, lessons };
+    persistScheduleDataCache();
+  }
+  return lessons;
+}
+
 function processScheduleMeta(meta, fallbackDateKey = selectedDateKey()) {
   if (!meta) return false;
   const dateKey = String(fallbackDateKey || "").slice(0, 10);
@@ -421,6 +470,7 @@ function processScheduleMeta(meta, fallbackDateKey = selectedDateKey()) {
 
   if (changed) {
     scheduleService.clearDateCache(dateKey);
+    invalidateScheduleData(dateKey);
     if (dateKey === selectedDateKey()) hideResult();
     showMessage(`Расписание на выбранную дату ${formatScheduleDate(dateKey)} было изменено (изменений: ${count})`);
   }
@@ -437,19 +487,23 @@ async function refreshSelectedDateMeta(dateKey) {
   }
 }
 
-function prefetchSelectedSchedule(delay = 80) {
+function prefetchEntitySchedule(entity, delay = 80) {
   window.clearTimeout(schedulePrefetchTimer);
-  if (!state.selectedEntity || !hasScheduleDate(state.selectedDate)) return;
+  if (!entity || !hasScheduleDate(state.selectedDate)) return;
 
   const params = {
     type: scheduleType(),
-    query: state.selectedEntity,
+    query: entity,
     weekStart: selectedWeekStartKey(),
     dateKey: selectedDateKey()
   };
   schedulePrefetchTimer = window.setTimeout(() => {
-    scheduleService.getWeekDay(params).catch(() => {});
+    loadScheduleWithCache(params).catch(() => {});
   }, delay);
+}
+
+function prefetchSelectedSchedule(delay = 80) {
+  prefetchEntitySchedule(state.selectedEntity, delay);
 }
 
 function updateDownloadButton() {
@@ -549,6 +603,8 @@ function addOption(entity) {
   button.type = "button";
   button.append(createElement("span", "truncate", entity));
   if (isSelected) button.insertAdjacentHTML("beforeend", checkIconMarkup);
+  button.addEventListener("pointerenter", () => prefetchEntitySchedule(entity, 40));
+  button.addEventListener("focus", () => prefetchEntitySchedule(entity, 40));
   button.addEventListener("click", () => {
     state.selectedEntity = entity;
     state.lastSelectedByMode[state.mode] = entity;
@@ -871,7 +927,7 @@ function hideResult() {
 }
 
 async function loadLessonsForSelection() {
-  return scheduleService.getWeekDay({
+  return loadScheduleWithCache({
     type: scheduleType(),
     query: state.selectedEntity,
     weekStart: selectedWeekStartKey(),
