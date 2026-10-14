@@ -101,6 +101,8 @@ select {
 
 button {
   cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
 }
 
 svg {

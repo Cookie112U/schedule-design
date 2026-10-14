@@ -115,6 +115,26 @@ function assertRuntimeScheduleFlow() {
 
   const saturdaySlots = win.ScheduleTimeStore.getSlots("2026-09-19");
   assert.strictEqual(saturdaySlots.length, 4, "на субботу должны быть только 4 пары без отдельной сетки звонков");
+  const saturdayLessons = win.ScheduleTimeStore.applyTimes([
+    { lesson: "1-2", discipline: "Информатика" },
+    { lesson: "3-4", discipline: "История" },
+    { lesson: "6-7", discipline: "Математика" },
+    { lesson: "8-9", discipline: "Физика" },
+    { lesson: "10-11", discipline: "Неизвестный субботний блок" }
+  ], "2026-09-26");
+  assert.deepStrictEqual(
+    Array.from(saturdayLessons.map((lesson) => lesson.time || "")),
+    ["8:30-10:55", "8:30-10:55", "11:00-13:25", "11:00-13:25", ""],
+    "суббота должна использовать только четыре укрупненных блока без будничного продолжения"
+  );
+
+  const september23 = win.ScheduleTimeStore.applyTimes([
+    { lesson: "", discipline: "Кл час" },
+    { lesson: "8-9", discipline: "МДК 02.02" },
+    { lesson: "10-11", discipline: "МДК 02.01" }
+  ], "2026-09-23");
+  assert.deepStrictEqual(Array.from(september23.map((lesson) => lesson.lesson)), ["Кл. час", "8-9", "10-11"]);
+  assert.deepStrictEqual(Array.from(september23.map((lesson) => lesson.time)), ["13:40-14:10", "14:20-15:40", "15:50-17:10"], "23 сентября неизвестная пара должна продолжать последнюю известную сетку, а не брать утренний слот");
 
   win.ScheduleTimeStore.setDateSlots("2026-09-15", [
     { name: "1 пара", lessons: "1-2 урок", time: "8:00-9:20" }
@@ -173,6 +193,31 @@ function assertRuntimeScheduleFlow() {
   assert.strictEqual(rooms.length, 1, "legacy all должен создать аудиторию из rooms");
   assert.strictEqual(rooms[0].busy, true);
   assert.strictEqual(rooms[0].lessons[0].group, "3ИС3");
+
+  const splitRooms = win.ScheduleTransform.normalizeClassrooms([{
+    building: { number: "КОРПУС 2" },
+    schedule: [{
+      name: "4ИС6",
+      schedule: [
+        { lesson: "8-9", name: "МДК", teachers: ["Ковалёв ЕМ"], rooms: ["ч-з-18"] },
+        { lesson: "3", name: "Физика", teachers: ["Иванов ИИ"], rooms: ["лаб 5"] },
+        { lesson: "4", name: "Право", teachers: ["Петров ПП"], rooms: ["25-а"] },
+        { lesson: "5", name: "История", teachers: ["Сидоров СС"], rooms: ["21/22"] }
+      ]
+    }]
+  }], "2026-09-23");
+  assert.deepStrictEqual(Array.from(splitRooms.map((room) => room.room)), ["ч-з", "18", "лаб 5", "25-а", "21", "22"]);
+  assert.deepStrictEqual(Array.from(splitRooms[0].lessons[0].rooms), ["ч-з", "18"]);
+  assert.strictEqual(splitRooms[0].busy, true);
+  assert.strictEqual(splitRooms[1].busy, true);
+
+  const genericSplitRooms = win.ScheduleTransform.normalizeClassrooms([
+    { number: "ч-з–18", building: "КОРПУС 2", busy: true },
+    { number: "25-а", building: "КОРПУС 2", busy: false }
+  ], "2026-09-23");
+  assert.deepStrictEqual(Array.from(genericSplitRooms.map((room) => room.room)), ["ч-з", "18", "25-а"]);
+  assert.strictEqual(genericSplitRooms[0].busy, true);
+  assert.strictEqual(genericSplitRooms[1].busy, true);
 }
 function assertJavaScriptSyntax() {
   const files = [...listFiles("js", ".js"), "dev-server.js"];
@@ -304,6 +349,7 @@ function assertCurrentUxRequirements() {
   const responsive = read("css/base/responsive.css");
   const holidayButtons = read("css/holidays/holiday-buttons.css");
   const holidayNumbers = read("css/holidays/holiday-numbers.css");
+  const compatibility = read("css/base/compatibility.css");
 
   assert(/monthLabel\.textContent = `\$\{months\[month\]\} \$\{year\}`/.test(app), "desktop month label must include year");
   assert(/data-setting="width" data-value="compact"/.test(html) && /data-setting="width" data-value="full"/.test(html), "settings must provide compact and full content widths");
@@ -312,6 +358,13 @@ function assertCurrentUxRequirements() {
   assert(/--content-max:\s*1440px/.test(read("css/base/foundation.css")), "large screens must have a standard content width limit");
   assert(/max-width:\s*var\(--content-max\)/.test(layout), "header and layout must use the selected content width limit");
   assert(/font-size:\s*var\(--result-meta-font\)/.test(schedule) && /font-size:\s*var\(--result-main-font\)/.test(schedule), "bottom and modal schedules must follow the selected size");
+  assert(/@supports not \(color: color-mix/.test(compatibility), "older browsers must receive non-color-mix fallbacks");
+  assert(/height:\s*calc\(100dvh - 24px\)/.test(overlays) && /#scheduleModal \.modal-schedule-list \{[\s\S]*overflow:\s*visible/.test(overlays), "mobile schedule modal must scroll as one surface");
+  assert(/function openDialog/.test(app) && /function closeDialog/.test(app), "dialogs must have a browser-compatible controller");
+  assert(/class="settings-scroll"/.test(html) && /\.settings-scroll \{[\s\S]*overflow-y:\s*auto/.test(overlays), "mobile settings must keep its header fixed and scroll only its content");
+  assert(!/if \(roomsModal\.open\) \{\s*closeDialog\(roomsModal\)/.test(app), "closing room details must reveal the rooms list");
+  assert(/rooms-v3:/.test(app), "room parser changes must invalidate old room cache entries");
+  assert(/announceScheduleMeta\(catalogs\.meta, selectedDateKey\(\)\)/.test(app), "legacy metadata must announce change count and timestamp");
   assert(/mobileMonthTitle\.textContent = `\$\{months\[month\]\} \$\{year\}`/.test(app), "mobile/tablet month label must include year");
   assert(/const maxFavorites = 18;/.test(app), "favorites list must be limited to 18 items");
   assert(/\.slice\(0, maxFavorites\)/.test(app), "rendered favorites must be capped");

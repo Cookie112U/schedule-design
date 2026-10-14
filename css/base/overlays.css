@@ -1,4 +1,6 @@
 .modal {
+  position: fixed;
+  inset: 0;
   width: min(600px, calc(100vw - 32px));
   max-width: none;
   max-height: calc(100vh - 32px);
@@ -7,6 +9,19 @@
   color: var(--ink);
   background: transparent;
   border: 0;
+  margin: auto;
+}
+
+.modal:not([open]) {
+  display: none;
+}
+
+.modal[open] {
+  display: block;
+}
+
+.modal-open {
+  overflow: hidden;
 }
 
 .modal::backdrop {
@@ -93,7 +108,28 @@
 }
 
 #settingsModal .modal-card {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  overflow: hidden;
+}
+
+#settingsModal .modal-head {
+  position: relative;
+  z-index: 1;
+  margin-bottom: 0;
+  padding-bottom: 16px;
+  background: var(--surface);
+}
+
+.settings-scroll {
+  min-height: 0;
+  padding-right: 4px;
+  padding-bottom: 4px;
+  overflow-x: hidden;
   overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  -webkit-overflow-scrolling: touch;
 }
 
 .rooms-card {
@@ -384,6 +420,37 @@
   .toast-stack {
     right: 12px;
     bottom: 12px;
+  }
+
+  #settingsModal {
+    height: calc(100vh - 24px);
+    height: calc(100dvh - 24px);
+    overflow: hidden;
+  }
+
+  #settingsModal .modal-card {
+    height: 100%;
+    max-height: none;
+    padding-bottom: max(16px, env(safe-area-inset-bottom));
+  }
+
+  #scheduleModal {
+    height: calc(100vh - 24px);
+    height: calc(100dvh - 24px);
+  }
+
+  #scheduleModal .schedule-dialog {
+    height: 100%;
+    max-height: none;
+    display: block;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  #scheduleModal .modal-schedule-list {
+    overflow: visible;
   }
 }
 

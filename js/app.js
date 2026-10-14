@@ -17,6 +17,25 @@ const scheduleTransform = window.ScheduleTransform;
 const errorCatalog = window.ScheduleErrorCatalog;
 const { start: startHolidayParticles } = window.ScheduleHolidayParticles;
 
+function openDialog(dialog) {
+  if (!dialog || dialog.open) return;
+  if (typeof dialog.showModal === "function") {
+    dialog.showModal();
+    return;
+  }
+  dialog.setAttribute("open", "");
+  dialog.setAttribute("role", "dialog");
+  dialog.setAttribute("aria-modal", "true");
+  document.documentElement.classList.add("modal-open");
+}
+
+function closeDialog(dialog) {
+  if (!dialog) return;
+  if (typeof dialog.close === "function") dialog.close();
+  else dialog.removeAttribute("open");
+  if (!document.querySelector("dialog[open]")) document.documentElement.classList.remove("modal-open");
+}
+
 const app = document.querySelector(".app");
 const calendarGrid = document.querySelector("#calendarGrid");
 const weekStrip = document.querySelector("#weekStrip");
@@ -138,6 +157,7 @@ let catalogLoadRequestId = 0;
 let roomsLoadRequestId = 0;
 let catalogRefreshTimer = 0;
 let roomsRefreshTimer = 0;
+const scheduleMetaFingerprints = new Map();
 
 function saveState() {
   writeSavedState({
@@ -269,7 +289,41 @@ function roomCacheScope() {
 }
 
 function roomCacheKey(dateKey) {
-  return `${roomCacheScope()}:${dateKey}`;
+  return `rooms-v3:${roomCacheScope()}:${dateKey}`;
+}
+
+function formatNoticeDate(dateKey) {
+  const [year, month, day] = String(dateKey || "").slice(0, 10).split("-");
+  return year && month && day ? `${day}.${month}.${year}` : String(dateKey || "");
+}
+
+function formatNoticeTimestamp(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return new Intl.DateTimeFormat("ru-RU", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit"
+  }).format(date);
+}
+
+function announceScheduleMeta(meta, dateKey) {
+  if (!meta || !dateKey) return;
+  const count = Number(meta.countOfChanges ?? meta.count_of_changes);
+  const lastChange = String(meta.lastChange || meta.last_change || "");
+  if (!Number.isFinite(count) && !lastChange) return;
+
+  const fingerprint = `${lastChange}|${Number.isFinite(count) ? count : ""}`;
+  if (scheduleMetaFingerprints.get(dateKey) === fingerprint) return;
+  scheduleMetaFingerprints.set(dateKey, fingerprint);
+
+  const details = [];
+  if (Number.isFinite(count)) details.push(`количество изменений: ${count}`);
+  const changedAt = formatNoticeTimestamp(lastChange);
+  if (changedAt) details.push(`обновлено: ${changedAt}`);
+  showMessage(`Расписание на ${formatNoticeDate(dateKey)} обновлено${details.length ? `. ${details.join("; ")}` : ""}`);
 }
 
 function persistRoomCache() {
@@ -609,6 +663,11 @@ function normalizeRoomLabel(value) {
   return /^каб/i.test(room) ? room : `каб. ${room}`;
 }
 
+function normalizeLessonRooms(lesson) {
+  const rooms = Array.isArray(lesson.rooms) && lesson.rooms.length ? lesson.rooms : [lesson.room];
+  return rooms.map(normalizeRoomLabel).filter(Boolean);
+}
+
 function lessonPlaceValue(lesson) {
   if (isLunchLesson(lesson)) return "";
   return lesson.place || [lesson.building, lesson.room].filter(Boolean).join(" ");
@@ -617,9 +676,9 @@ function lessonPlaceValue(lesson) {
 function createLessonPlace(className, lesson) {
   if (isLunchLesson(lesson)) return null;
   const building = normalizeBuildingLabel(lesson.building);
-  const room = normalizeRoomLabel(lesson.room);
+  const rooms = normalizeLessonRooms(lesson);
 
-  if (!building && !room) {
+  if (!building && !rooms.length) {
     const fallback = lessonPlaceValue(lesson);
     return fallback ? createElement("div", className, fallback) : null;
   }
@@ -627,7 +686,7 @@ function createLessonPlace(className, lesson) {
   const element = createElement("div", `${className} lesson-place`);
   const buildingLabel = createBuildingLabel(lesson.building, "lesson-building");
   if (buildingLabel) element.append(buildingLabel);
-  if (room) element.append(createElement("span", "lesson-room-number", room));
+  if (rooms.length) element.append(createElement("span", "lesson-room-number", rooms.join(", ")));
   return element;
 }
 
@@ -759,7 +818,7 @@ async function showSchedule() {
         : `Преподаватель ${state.selectedEntity}`;
       setModalDateLine(state.selectedDate);
       renderModalLessons(modalLessonList, lessons);
-      scheduleModal.showModal();
+      openDialog(scheduleModal);
       return;
     }
 
@@ -779,7 +838,7 @@ async function showSchedule() {
           : `Преподаватель ${state.selectedEntity}`;
         setModalDateLine(state.selectedDate);
         renderModalLessons(modalLessonList, lessons);
-        scheduleModal.showModal();
+        openDialog(scheduleModal);
         return;
       }
 
@@ -1039,10 +1098,6 @@ function appendDetailLine(label, value) {
 }
 
 function showRoomDetail(item) {
-  if (roomsModal.open) {
-    roomsModal.close();
-  }
-
   roomDetailTitle.textContent = `Аудитория ${item.room}`;
   roomDetailContent.className = "room-detail-content";
   roomDetailContent.innerHTML = "";
@@ -1068,7 +1123,7 @@ function showRoomDetail(item) {
     roomDetailContent.append(createElement("p", "", "На выбранной паре аудитория свободна."));
   }
 
-  roomDetailModal.showModal();
+  openDialog(roomDetailModal);
 }
 
 function applySettings() {
@@ -1122,6 +1177,7 @@ function applyCatalogs(catalogs) {
   setScheduleUrl(catalogs.meta?.url || "");
   apiState.scheduleDates = new Set(catalogs.dates || []);
   apiState.catalogsLoaded = true;
+  announceScheduleMeta(catalogs.meta, selectedDateKey());
 
   const entities = getEntities();
   const nextEntity = chooseAvailableEntity(entities);
@@ -1194,6 +1250,11 @@ function handleScheduleNotice(payload = {}) {
     if (dateKey === selectedDateKey()) {
       hideResult();
     }
+  }
+
+  if (payload.countOfChanges !== undefined || payload.count_of_changes !== undefined || payload.lastChange || payload.last_change) {
+    announceScheduleMeta(payload, dateKey || selectedDateKey());
+    return;
   }
 
   const fallback = payload.event_type === "schedule_updated"
@@ -1282,15 +1343,29 @@ downloadScheduleButton.addEventListener("click", () => {
   }
   window.open(apiState.scheduleUrl, "_blank", "noopener");
 });
-settingsButton.addEventListener("click", () => settingsModal.showModal());
+settingsButton.addEventListener("click", () => openDialog(settingsModal));
 roomsButton.addEventListener("click", () => {
-  roomsModal.showModal();
+  openDialog(roomsModal);
   renderRooms();
 });
-holidayAdminButton.addEventListener("click", () => holidayAdminModal.showModal());
+holidayAdminButton.addEventListener("click", () => openDialog(holidayAdminModal));
 
 document.querySelectorAll("[data-close]").forEach((button) => {
-  button.addEventListener("click", () => document.querySelector(`#${button.dataset.close}`).close());
+  button.addEventListener("click", () => closeDialog(document.querySelector(`#${button.dataset.close}`)));
+});
+
+document.querySelectorAll('#settingsModal [value="close"]').forEach((button) => {
+  button.addEventListener("click", (event) => {
+    event.preventDefault();
+    closeDialog(settingsModal);
+  });
+});
+
+document.addEventListener("keydown", (event) => {
+  if (event.key !== "Escape") return;
+  const openDialogs = Array.from(document.querySelectorAll("dialog[open]"));
+  const fallbackDialog = openDialogs[openDialogs.length - 1];
+  if (fallbackDialog && typeof fallbackDialog.close !== "function") closeDialog(fallbackDialog);
 });
 
 document.querySelectorAll("[data-setting]").forEach((button) => {

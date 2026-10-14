@@ -1,0 +1,45 @@
+/* Fallbacks for browsers without color-mix(). Keep this file last in main.css. */
+@supports not (color: color-mix(in srgb, white, black)) {
+  .day-cell.has-schedule:not(.selected) {
+    box-shadow: inset 0 0 0 2px var(--accent);
+  }
+
+  .day-cell.has-schedule:not(.selected)::after,
+  .week-date.has-schedule:not(.active)::after {
+    background: var(--accent);
+  }
+
+  .lesson-room-number,
+  .room-person {
+    background: var(--surface);
+  }
+
+  .setting-pill.active .building-address,
+  .mode-button.active .building-address {
+    color: var(--accent-ink);
+    opacity: 0.74;
+  }
+
+  .room-group {
+    background: var(--accent);
+    border-color: var(--line);
+  }
+
+  .app[data-holiday]:not([data-holiday="none"]) .mode-button:not(.active),
+  .app[data-holiday]:not([data-holiday="none"]) .select-trigger,
+  .app[data-holiday]:not([data-holiday="none"]) .secondary-button,
+  .app[data-holiday]:not([data-holiday="none"]) .select-like,
+  .app[data-holiday]:not([data-holiday="none"]) .month-arrow,
+  .app[data-holiday]:not([data-holiday="none"]) .select-menu,
+  .app[data-holiday]:not([data-holiday="none"]) .month-menu {
+    background: var(--surface);
+    border-color: var(--line);
+  }
+}
+
+@supports not (backdrop-filter: blur(1px)) {
+  .app[data-holiday]:not([data-holiday="none"]) .calendar-panel,
+  .app[data-holiday]:not([data-holiday="none"]) .search-panel {
+    background-color: var(--surface);
+  }
+}
