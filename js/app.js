@@ -209,7 +209,7 @@ const catalogCacheTtlMs = 24 * 60 * 60 * 1000;
 const maxCatalogCacheDates = 20;
 
 const isAuditMode = new URLSearchParams(window.location.search).has("audit");
-const availableHolidayModes = new Set(Array.from(document.querySelectorAll("[data-holiday]")).map((button) => button.dataset.holiday));
+const availableHolidayModes = new Set(Array.from(document.querySelectorAll(".holiday-option[data-holiday]")).map((button) => button.dataset.holiday));
 if (!availableHolidayModes.has(state.holidayMode)) {
   state.holidayMode = defaults.holidayMode;
 }

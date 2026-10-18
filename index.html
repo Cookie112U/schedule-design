@@ -3,13 +3,31 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="description" content="Актуальное расписание занятий НТТЭК для студентов и преподавателей. Просмотр по датам, группам и преподавателям, занятость аудиторий и скачивание XLSX." />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#17212b" media="(prefers-color-scheme: dark)" />
     <title>Расписание НТТЭК</title>
+    <link rel="canonical" href="https://a.nttek.ru/" />
+    <link rel="icon" type="image/svg+xml" href="Img/Favicon.svg" />
     <link rel="icon" type="image/png" href="Img/logo_small.png" />
+    <link rel="apple-touch-icon" href="Img/logo_small.png" />
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="ru_RU" />
+    <meta property="og:site_name" content="НТТЭК" />
+    <meta property="og:title" content="Расписание НТТЭК" />
+    <meta property="og:description" content="Актуальное расписание занятий для студентов и преподавателей НТТЭК." />
+    <meta property="og:url" content="https://a.nttek.ru/" />
+    <meta property="og:image" content="https://a.nttek.ru/Img/logo_small.png" />
+    <meta name="twitter:card" content="summary" />
+    <script type="application/ld+json">
+      {"@context":"https://schema.org","@type":"WebApplication","name":"Расписание НТТЭК","url":"https://a.nttek.ru/","applicationCategory":"EducationalApplication","operatingSystem":"Any","inLanguage":"ru","isPartOf":{"@type":"CollegeOrUniversity","name":"ГАПОУ СО НТТЭК","url":"https://www.nttek.ru/"}}
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Merriweather:300,400,700&amp;subset=cyrillic&amp;display=swap" />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Raleway:400,500,600,700&amp;subset=cyrillic&amp;display=swap" />
-    <script src="js/modules/holiday.js?v=2026.10.14.6"></script>
+    <script src="js/modules/holiday.js?v=2026.10.18.1"></script>
     <script>
       // Применяем сохранённые настройки до первой отрисовки, чтобы не было вспышки светлой темы.
       (function () {
@@ -27,16 +45,16 @@
       })();
     </script>
     <!-- Повышайте версию одновременно у всех локальных CSS и JS после релиза. -->
-    <link rel="stylesheet" href="css/app.css?v=2026.10.14.6" />
-    <link rel="stylesheet" href="css/holidays/new-year.css?v=2026.10.14.6" />
-    <link rel="stylesheet" href="css/holidays/russia-day.css?v=2026.10.14.6" />
-    <link rel="stylesheet" href="css/holidays/easter.css?v=2026.10.14.6" />
-    <link rel="stylesheet" href="css/holidays/september.css?v=2026.10.14.6" />
-    <link rel="stylesheet" href="css/holidays/march-8.css?v=2026.10.14.6" />
-    <link rel="stylesheet" href="css/holidays/february-23.css?v=2026.10.14.6" />
-    <link rel="stylesheet" href="css/holidays/victory-day.css?v=2026.10.14.6" />
-    <link rel="stylesheet" href="css/holidays/holiday-numbers.css?v=2026.10.14.6" />
-    <link rel="stylesheet" href="css/holidays/holiday-buttons.css?v=2026.10.14.6" />
+    <link rel="stylesheet" href="css/app.css?v=2026.10.18.1" />
+    <link rel="stylesheet" href="css/holidays/new-year.css?v=2026.10.18.1" />
+    <link rel="stylesheet" href="css/holidays/russia-day.css?v=2026.10.18.1" />
+    <link rel="stylesheet" href="css/holidays/easter.css?v=2026.10.18.1" />
+    <link rel="stylesheet" href="css/holidays/september.css?v=2026.10.18.1" />
+    <link rel="stylesheet" href="css/holidays/march-8.css?v=2026.10.18.1" />
+    <link rel="stylesheet" href="css/holidays/february-23.css?v=2026.10.18.1" />
+    <link rel="stylesheet" href="css/holidays/victory-day.css?v=2026.10.18.1" />
+    <link rel="stylesheet" href="css/holidays/holiday-numbers.css?v=2026.10.18.1" />
+    <link rel="stylesheet" href="css/holidays/holiday-buttons.css?v=2026.10.18.1" />
   </head>
   <body>
     <div class="app relative min-h-screen overflow-x-clip" data-theme="light" data-size="medium" data-width="standard">
@@ -95,6 +113,7 @@
            раскладка адаптируется и к настройке «Размер», а не только к ширине экрана. -->
       <div class="@container mx-auto w-full max-w-(--content-max)">
       <main class="layout grid grid-cols-[minmax(0,1fr)] gap-4 px-4 py-4 md:gap-6 md:px-8 md:py-8 @min-[48rem]:grid-cols-[minmax(0,1fr)_21rem] @min-[48rem]:items-start">
+        <h1 class="sr-only">Расписание занятий НТТЭК</h1>
         <section class="calendar-panel" aria-label="Календарь">
           <div class="calendar-toolbar">
             <button class="desktop-month-select select-like hidden @min-[26rem]:inline-flex" type="button" id="monthButton">
@@ -318,17 +337,17 @@
       </section>
     </dialog>
 
-    <script src="js/modules/config.js?v=2026.10.14.6"></script>
-    <script src="js/modules/data.js?v=2026.10.14.6"></script>
-    <script src="js/modules/storage.js?v=2026.10.14.6"></script>
-    <script src="js/modules/error-catalog.js?v=2026.10.14.6"></script>
-    <script src="js/modules/api-client.js?v=2026.10.14.6"></script>
-    <script src="js/modules/public-api.js?v=2026.10.14.6"></script>
-    <script src="js/modules/schedule-request.js?v=2026.10.14.6"></script>
-    <script src="js/modules/schedule-time-store.js?v=2026.10.14.6"></script>
-    <script src="js/modules/schedule-transform.js?v=2026.10.14.6"></script>
-    <script src="js/modules/schedule-service.js?v=2026.10.14.6"></script>
-    <script src="js/modules/holiday-particles.js?v=2026.10.14.6"></script>
-    <script src="js/app.js?v=2026.10.14.6"></script>
+    <script src="js/modules/config.js?v=2026.10.18.1"></script>
+    <script src="js/modules/data.js?v=2026.10.18.1"></script>
+    <script src="js/modules/storage.js?v=2026.10.18.1"></script>
+    <script src="js/modules/error-catalog.js?v=2026.10.18.1"></script>
+    <script src="js/modules/api-client.js?v=2026.10.18.1"></script>
+    <script src="js/modules/public-api.js?v=2026.10.18.1"></script>
+    <script src="js/modules/schedule-request.js?v=2026.10.18.1"></script>
+    <script src="js/modules/schedule-time-store.js?v=2026.10.18.1"></script>
+    <script src="js/modules/schedule-transform.js?v=2026.10.18.1"></script>
+    <script src="js/modules/schedule-service.js?v=2026.10.18.1"></script>
+    <script src="js/modules/holiday-particles.js?v=2026.10.18.1"></script>
+    <script src="js/app.js?v=2026.10.18.1"></script>
   </body>
 </html>
