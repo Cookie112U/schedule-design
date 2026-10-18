@@ -7,6 +7,7 @@
     "dev": "node dev-server.js",
     "css:build": "tailwindcss -i ./src/app.css -o ./css/app.css --minify",
     "css:watch": "tailwindcss -i ./src/app.css -o ./css/app.css --watch",
+    "cache:bump": "node scripts/bump-cache-version.js",
     "test": "node tests/static-checks.js"
   },
   "devDependencies": {

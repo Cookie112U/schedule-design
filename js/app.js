@@ -196,7 +196,7 @@ const roomCacheTtlMs = 6 * 60 * 60 * 1000;
 const maxRoomCacheDates = 20;
 
 const isAuditMode = new URLSearchParams(window.location.search).has("audit");
-const availableHolidayModes = new Set(Array.from(document.querySelectorAll("[data-holiday]")).map((button) => button.dataset.holiday));
+const availableHolidayModes = new Set(Array.from(document.querySelectorAll(".holiday-option[data-holiday]")).map((button) => button.dataset.holiday));
 if (!availableHolidayModes.has(state.holidayMode)) {
   state.holidayMode = defaults.holidayMode;
 }
@@ -1183,7 +1183,7 @@ function applySettings() {
     button.classList.toggle("active", isActive);
     button.setAttribute("aria-pressed", String(isActive));
   });
-  document.querySelectorAll("[data-holiday]").forEach((button) => {
+  document.querySelectorAll(".holiday-option[data-holiday]").forEach((button) => {
     button.classList.toggle("active", button.dataset.holiday === state.holidayMode);
   });
 }
@@ -1428,7 +1428,7 @@ pairSelect.addEventListener("change", (event) => {
   if (isDialogOpen(roomsModal)) renderRooms();
 });
 
-document.querySelectorAll("[data-holiday]").forEach((button) => {
+document.querySelectorAll(".holiday-option[data-holiday]").forEach((button) => {
   button.addEventListener("click", () => {
     state.holidayMode = button.dataset.holiday;
     applySettings();

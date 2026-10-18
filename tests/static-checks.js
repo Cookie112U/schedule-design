@@ -369,6 +369,27 @@ function assertAssetVersions() {
   assert.strictEqual(versions.size, 1, "все локальные CSS и JS должны использовать одну версию кеша");
 }
 
+function assertCacheAndSeo() {
+  const html = read("index.html");
+  const apache = read(".htaccess");
+  const portableHeaders = read("_headers");
+  const robots = read("robots.txt");
+  const sitemap = read("sitemap.xml");
+  const app = read("js/app.js");
+
+  assert(/<meta name="description" content="[^"]{50,}"/.test(html), "страница должна иметь содержательное meta description");
+  assert(/<link rel="canonical" href="https:\/\/a\.nttek\.ru\/"/.test(html), "страница должна иметь canonical URL");
+  assert(/property="og:title"/.test(html) && /property="og:image"/.test(html), "страница должна иметь Open Graph метаданные");
+  assert(/type="application\/ld\+json"/.test(html) && /WebApplication/.test(html), "страница должна иметь структурированные данные WebApplication");
+  assert(/<h1 class="sr-only">Расписание занятий НТТЭК<\/h1>/.test(html), "страница должна иметь единственный смысловой h1");
+  assert(/Sitemap: https:\/\/a\.nttek\.ru\/sitemap\.xml/.test(robots), "robots.txt должен ссылаться на sitemap");
+  assert(/<loc>https:\/\/a\.nttek\.ru\/<\/loc>/.test(sitemap), "sitemap должен содержать канонический адрес приложения");
+  assert(/no-cache, no-store, must-revalidate/.test(apache), "Apache должен запрещать долговременный кеш HTML");
+  assert(/max-age=31536000, immutable/.test(apache), "версионированные ресурсы должны кешироваться как immutable");
+  assert(/\/index\.html[\s\S]+no-cache, no-store, must-revalidate/.test(portableHeaders), "статический хостинг должен перепроверять index.html");
+  assert((app.match(/\.holiday-option\[data-holiday\]/g) || []).length >= 3, "обработчики праздников должны назначаться только праздничным кнопкам");
+}
+
 function assertSettingsDialogScrolling() {
   const html = read("index.html");
   const overlays = read("src/components/overlays.css");
@@ -514,6 +535,7 @@ assertJavaScriptSyntax();
 assertRuntimeScheduleFlow();
 assertTailwindSetup();
 assertAssetVersions();
+assertCacheAndSeo();
 assertMobileFirst();
 assertUiClassesAreBuilt();
 assertSettingsDialogScrolling();

@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://a.nttek.ru/sitemap.xml
