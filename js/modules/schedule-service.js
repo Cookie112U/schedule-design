@@ -6,6 +6,7 @@ window.ScheduleService = (() => {
     catalog: 10 * 60 * 1000,
     schedule: 45 * 1000,
     dates: 2 * 60 * 1000,
+    meta: 30 * 1000,
     classrooms: 45 * 1000,
     timeTemplate: 15 * 60 * 1000
   };
@@ -99,6 +100,11 @@ window.ScheduleService = (() => {
     }, force);
   }
 
+  async function getScheduleMeta({ dateKey, force = false } = {}) {
+    const key = cacheKey({ type: "meta", dateKey, mode: request.apiMode?.() });
+    return withCache(key, ttl.meta, () => request.loadScheduleMeta({ date: dateKey }), force);
+  }
+
   async function getWeekDay({ type, query, weekStart, dateKey, force = false }) {
     const key = cacheKey({ type: "week", view: type, query, weekStart, dateKey, mode: request.apiMode?.() });
     const response = await withCache(key, ttl.schedule, () => request.loadWeekSchedule({ type, query, weekStart, dateKey }), force);
@@ -181,6 +187,7 @@ window.ScheduleService = (() => {
     getCatalogs,
     getClassrooms,
     getScheduleDates,
+    getScheduleMeta,
     getTimeTemplate,
     getWeekDay,
     startScheduleDatesWatcher

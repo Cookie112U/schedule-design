@@ -98,9 +98,9 @@
   --popover: var(--color-neutral-900);
   --popover-foreground: var(--color-neutral-100);
 
-  /* На тёмном фоне primary-600 сливается с карточкой (neutral-800) — берём primary-400,
-     как в тёмных ссылках основного сайта. Свой акцент пользователя не трогаем. */
-  --primary: var(--user-accent, var(--color-primary-400));
+  /* На тёмном фоне primary-600 сливается с карточкой, а primary-400 не даёт достаточного
+     контраста с белым текстом — primary-500 сохраняет заметность и проходит WCAG AA. */
+  --primary: var(--user-accent, var(--color-primary-500));
   --primary-soft: color-mix(in oklab, var(--primary) 22%, transparent);
   --primary-soft-foreground: color-mix(in oklab, var(--primary) 55%, white);
 
@@ -108,7 +108,7 @@
   --secondary-foreground: var(--color-neutral-100);
   /* muted/accent светлее карточки (neutral-800), иначе вкладки и дни календаря не видны. */
   --muted: var(--color-neutral-700);
-  --muted-foreground: var(--color-neutral-400);
+  --muted-foreground: var(--color-neutral-300);
   --accent: var(--color-neutral-600);
   --accent-foreground: var(--color-neutral-50);
 

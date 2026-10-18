@@ -194,6 +194,7 @@ if (state.selectedEntity && !state.lastSelectedByMode[state.mode]) {
 const roomCache = typeof readRoomCache === "function" ? readRoomCache() : {};
 const roomCacheTtlMs = 6 * 60 * 60 * 1000;
 const maxRoomCacheDates = 20;
+const scheduleRevisionByDate = new Map();
 
 const isAuditMode = new URLSearchParams(window.location.search).has("audit");
 const availableHolidayModes = new Set(Array.from(document.querySelectorAll(".holiday-option[data-holiday]")).map((button) => button.dataset.holiday));
@@ -368,23 +369,49 @@ function pruneRoomCache() {
   entries.slice(maxRoomCacheDates).forEach(([key]) => delete roomCache[key]);
 }
 
-function readCachedRooms(dateKey) {
+function scheduleRevision(meta) {
+  if (!meta) return "";
+  const count = meta.countOfChanges ?? meta.count_of_changes ?? "";
+  const changedAt = meta.lastChange || meta.last_change || "";
+  return `${count}|${changedAt}`;
+}
+
+function forgetCachedRooms(dateKey) {
+  const key = roomCacheKey(dateKey);
+  if (!roomCache[key]) return;
+  delete roomCache[key];
+  persistRoomCache();
+}
+
+function rememberScheduleRevision(dateKey, meta) {
+  const revision = scheduleRevision(meta);
+  if (!revision || revision === "|") return false;
+  const previous = scheduleRevisionByDate.get(dateKey) || "";
+  scheduleRevisionByDate.set(dateKey, revision);
+
+  const cached = roomCache[roomCacheKey(dateKey)];
+  const cacheChanged = Boolean(cached && cached.revision !== revision);
+  if (cacheChanged) forgetCachedRooms(dateKey);
+  return Boolean(previous && previous !== revision) || cacheChanged;
+}
+
+function readCachedRooms(dateKey, revision = scheduleRevisionByDate.get(dateKey) || "") {
   const key = roomCacheKey(dateKey);
   const cached = roomCache[key];
   if (!cached || !Array.isArray(cached.rooms)) return null;
 
-  if (Date.now() - Number(cached.savedAt || 0) > roomCacheTtlMs) {
-    delete roomCache[key];
-    persistRoomCache();
+  if ((revision && cached.revision !== revision) || Date.now() - Number(cached.savedAt || 0) > roomCacheTtlMs) {
+    forgetCachedRooms(dateKey);
     return null;
   }
 
   return cached.rooms;
 }
 
-function writeCachedRooms(dateKey, rooms) {
+function writeCachedRooms(dateKey, rooms, revision = scheduleRevisionByDate.get(dateKey) || "") {
   roomCache[roomCacheKey(dateKey)] = {
     savedAt: Date.now(),
+    revision,
     rooms
   };
   pruneRoomCache();
@@ -1021,13 +1048,9 @@ function deriveTimeSlotsFromRooms(rooms) {
 }
 
 function lessonMatchesSlot(lesson, slot) {
-  if (!slot) return true;
-  const candidates = [lesson.slotKey, lesson.lesson, lesson.pair, lesson.time].map((value) => String(value || "").toLowerCase());
-  const targets = [slot.value, slot.number, slot.label, slot.time, slot.displayLesson].map((value) => String(value || "").toLowerCase()).filter(Boolean);
-  if (targets.some((target) => candidates.includes(target))) return true;
-
-  const lessonNumbers = String(lesson.lesson || "").split(/\D+/).filter(Boolean);
-  return Boolean(slot.number && lessonNumbers.includes(String(slot.number)));
+  return window.ScheduleTimeStore?.matchesSlot
+    ? window.ScheduleTimeStore.matchesSlot(lesson, slot)
+    : !slot;
 }
 
 function normalizeRoomForSelectedSlot(room) {
@@ -1045,11 +1068,20 @@ function roomLessonPreview(item) {
 }
 
 async function loadRoomsForDate(dateKey, force = false) {
-  const cached = force ? null : readCachedRooms(dateKey);
+  let revisionChanged = false;
+  try {
+    const meta = await scheduleService.getScheduleMeta({ dateKey, force });
+    revisionChanged = rememberScheduleRevision(dateKey, meta);
+  } catch (_) {
+    // При временной недоступности метаданных остаётся короткий сервисный TTL и локальный TTL.
+  }
+
+  const revision = scheduleRevisionByDate.get(dateKey) || "";
+  const cached = force || revisionChanged ? null : readCachedRooms(dateKey, revision);
   if (cached) return cached;
 
-  const rooms = await scheduleService.getClassrooms({ dateKey, force });
-  writeCachedRooms(dateKey, rooms);
+  const rooms = await scheduleService.getClassrooms({ dateKey, force: force || revisionChanged });
+  writeCachedRooms(dateKey, rooms, revision);
   return rooms;
 }
 
@@ -1064,18 +1096,17 @@ async function renderRooms({ force = false } = {}) {
   renderInlineStatus(roomCards, "Загрузка аудиторий...");
 
   try {
-    if (!apiState.timeSlots.length) {
-      await loadTimeSlotsForDate();
-      if (requestId !== roomsLoadRequestId || dateKey !== selectedDateKey()) return;
-    }
-
     const rooms = await loadRoomsForDate(dateKey, force);
     if (requestId !== roomsLoadRequestId || dateKey !== selectedDateKey()) return;
     apiState.currentRooms = rooms;
 
-    if (!apiState.timeSlots.length) {
-      apiState.timeSlots = deriveTimeSlotsFromRooms(rooms);
+    const roomSlots = deriveTimeSlotsFromRooms(rooms);
+    if (roomSlots.length) {
+      apiState.timeSlots = roomSlots;
       renderPairOptions();
+    } else if (!apiState.timeSlots.length) {
+      await loadTimeSlotsForDate();
+      if (requestId !== roomsLoadRequestId || dateKey !== selectedDateKey()) return;
     }
 
     roomCards.innerHTML = "";
@@ -1207,6 +1238,7 @@ function clearCatalogsAfterDateError() {
   renderCalendar();
 }
 function applyCatalogs(catalogs) {
+  rememberScheduleRevision(selectedDateKey(), catalogs.meta);
   apiState.groupsByBuilding = catalogs.groups || {};
   apiState.groups = Object.values(apiState.groupsByBuilding).flat().sort(sortRu);
   apiState.teachers = (catalogs.teachers || []).sort(sortRu);
@@ -1289,6 +1321,7 @@ async function loadCatalogs({ force = false } = {}) {
 function handleScheduleDateAdded(dateKey) {
   apiState.scheduleDates.add(dateKey);
   scheduleService.clearDateCache(dateKey);
+  forgetCachedRooms(dateKey);
   renderCalendar();
   if (dateKey === selectedDateKey()) refreshCatalogsForDate(true);
   showMessage(`Появилось расписание на ${dateKey}`);
@@ -1299,6 +1332,7 @@ function handleScheduleNotice(payload = {}) {
   if (dateKey) {
     apiState.scheduleDates.add(dateKey);
     scheduleService.clearDateCache(dateKey);
+    forgetCachedRooms(dateKey);
     renderCalendar();
 
     if (dateKey === selectedDateKey()) {

@@ -134,6 +134,20 @@ function assertRuntimeScheduleFlow() {
   ], "2026-09-19");
   assert.deepStrictEqual(Array.from(saturdayLessons.map((lesson) => lesson.time)), ["8:30-10:55", "11:00-13:25"]);
 
+  const mondayFourthPair = win.ScheduleTimeStore.getSlots("2026-10-19")
+    .find((slot) => slot.displayLesson === "8-9");
+  assert(mondayFourthPair, "для понедельника должна определяться 4 пара / 8-9 урок");
+  assert.strictEqual(
+    win.ScheduleTimeStore.matchesSlot({ lesson: "6-7", group: "ГРУППА А" }, mondayFourthPair),
+    false,
+    "предыдущая группа 6-7 не должна попадать в занятость 8-9 из-за служебного number=7"
+  );
+  assert.strictEqual(
+    win.ScheduleTimeStore.matchesSlot({ lesson: "8-9", group: "ГРУППА Б" }, mondayFourthPair),
+    true,
+    "занятость 8-9 должна показывать группу текущей пары"
+  );
+
   win.ScheduleTimeStore.setDateSlots("2026-09-15", [
     { name: "1 пара", lessons: "1-2 урок", time: "8:00-9:20" }
   ]);
@@ -191,6 +205,16 @@ function assertRuntimeScheduleFlow() {
   assert.strictEqual(rooms.length, 1, "legacy all должен создать аудиторию из rooms");
   assert.strictEqual(rooms[0].busy, true);
   assert.strictEqual(rooms[0].lessons[0].group, "3ИС3");
+
+  const roomAfterLunch = win.ScheduleTransform.normalizeClassrooms([{
+    building: { number: "КОРПУС 2" },
+    schedule: [
+      { name: "ГРУППА А", schedule: [{ lesson: "5", name: "обед", teachers: [], rooms: ["18"] }] },
+      { name: "ГРУППА Б", schedule: [{ lesson: "5", name: "Математика", teachers: ["Ткаченко МВ"], rooms: ["18"] }] }
+    ]
+  }], "2026-10-16");
+  assert.strictEqual(roomAfterLunch.length, 1);
+  assert.deepStrictEqual(Array.from(roomAfterLunch[0].lessons.map((lesson) => lesson.group)), ["ГРУППА Б"], "обед предыдущей группы не должен занимать аудиторию");
 
   const splitRooms = win.ScheduleTransform.normalizeClassrooms([{
     building: { number: "КОРПУС 2" },
@@ -252,6 +276,9 @@ function assertDownloadAndRoomCacheSupport() {
 
   assert(/readRoomCache/.test(storage) && /writeRoomCache/.test(storage), "storage должен иметь кеш аудиторий");
   assert(/loadRoomsForDate/.test(app) && /writeCachedRooms/.test(app), "app должен кешировать аудитории по выбранной дате");
+  assert(/cached\.revision !== revision/.test(app) && /getScheduleMeta\(\{ dateKey, force \}\)/.test(app), "кеш аудиторий должен сбрасываться при изменении ревизии расписания без лишних запросов при каждом переключении пары");
+  assert(/matchesSlot\(lesson, slot\)/.test(app) && /function matchesSlot/.test(read("js/modules/schedule-time-store.js")), "занятость должна сопоставляться по диапазону уроков, а не по номеру пары");
+  assert(/const roomSlots = deriveTimeSlotsFromRooms\(rooms\)/.test(app) && /if \(roomSlots\.length\)/.test(app), "варианты уроков занятости должны строиться из фактических данных выбранной даты");
   assert(!/settle\("classrooms", request\.loadClassrooms/.test(service), "каталоги не должны ждать загрузку всех аудиторий");
 
   assert(/room-meta/.test(app) && /room-person/.test(scheduleCss), "карточки аудиторий должны показывать группу/педагога чипами");
@@ -384,9 +411,9 @@ function assertCacheAndSeo() {
   assert(/<h1 class="sr-only">Расписание занятий НТТЭК<\/h1>/.test(html), "страница должна иметь единственный смысловой h1");
   assert(/Sitemap: https:\/\/a\.nttek\.ru\/sitemap\.xml/.test(robots), "robots.txt должен ссылаться на sitemap");
   assert(/<loc>https:\/\/a\.nttek\.ru\/<\/loc>/.test(sitemap), "sitemap должен содержать канонический адрес приложения");
-  assert(/no-cache, no-store, must-revalidate/.test(apache), "Apache должен запрещать долговременный кеш HTML");
+  assert(/no-cache, max-age=0, must-revalidate/.test(apache) && !/no-cache, no-store/.test(apache), "Apache должен перепроверять HTML, не отключая back-forward cache");
   assert(/max-age=31536000, immutable/.test(apache), "версионированные ресурсы должны кешироваться как immutable");
-  assert(/\/index\.html[\s\S]+no-cache, no-store, must-revalidate/.test(portableHeaders), "статический хостинг должен перепроверять index.html");
+  assert(/\/index\.html[\s\S]+no-cache, max-age=0, must-revalidate/.test(portableHeaders), "статический хостинг должен перепроверять index.html");
   assert((app.match(/\.holiday-option\[data-holiday\]/g) || []).length >= 3, "обработчики праздников должны назначаться только праздничным кнопкам");
 }
 

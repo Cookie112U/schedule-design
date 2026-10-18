@@ -42,7 +42,7 @@ function serveStatic(request, response) {
     const extension = path.extname(filePath).toLowerCase();
     response.writeHead(200, {
       "Content-Type": mimeTypes[extension] || "application/octet-stream",
-      "Cache-Control": "no-store"
+      "Cache-Control": extension === ".html" ? "no-cache, max-age=0, must-revalidate" : "no-cache"
     });
     fs.createReadStream(filePath).pipe(response);
   });
