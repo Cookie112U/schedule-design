@@ -266,6 +266,10 @@ window.ScheduleTransform = (() => {
     );
   }
 
+  function isLunchLesson(lesson) {
+    return /^обед$/i.test(lessonDiscipline(lesson).trim());
+  }
+
   function lessonTeachers(lesson) {
     if (Array.isArray(lesson?.teachers)) return compact(lesson.teachers.map(teacherName));
     return compact([lesson?.teacher, lesson?.teacher_name, lesson?.teacher_full_name].map(teacherName));
@@ -347,6 +351,7 @@ window.ScheduleTransform = (() => {
       groups.forEach((groupBlock) => {
         const group = groupCode(groupBlock?.name || groupBlock?.group || groupBlock);
         getLessonsContainer(groupBlock).forEach((rawLesson) => {
+          if (isLunchLesson(rawLesson)) return;
           const rawRooms = lessonRooms(rawLesson);
           if (!rawRooms.length) return;
 

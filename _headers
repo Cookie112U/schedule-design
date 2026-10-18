@@ -1,7 +1,7 @@
 /
-  Cache-Control: no-cache, no-store, must-revalidate
+  Cache-Control: no-cache, max-age=0, must-revalidate
 /index.html
-  Cache-Control: no-cache, no-store, must-revalidate
+  Cache-Control: no-cache, max-age=0, must-revalidate
 /robots.txt
   Cache-Control: no-cache, must-revalidate
 /sitemap.xml

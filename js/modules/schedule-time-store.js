@@ -327,6 +327,33 @@ window.ScheduleTimeStore = (() => {
     };
   }
 
+  function matchesSlot(lesson = {}, slot = null) {
+    if (!slot) return true;
+
+    const lessonKeys = [lesson.slotKey, lesson.lesson, lesson.pair, lesson.time]
+      .map(normalizeComparable)
+      .filter(Boolean);
+    const slotKeys = [slot.value, slot.label, slot.pair, slot.time, slot.displayLesson]
+      .map(normalizeComparable)
+      .filter(Boolean);
+    if (slotKeys.some((key) => lessonKeys.includes(key))) return true;
+
+    const lessonNumbers = lessonParts(lesson.lesson || lesson.slotKey || lesson.pair);
+    const slotNumbers = Array.isArray(slot.lessons) && slot.lessons.length
+      ? slot.lessons.map(String)
+      : lessonParts(slot.displayLesson || slot.value || slot.label);
+    if (!lessonNumbers.length || !slotNumbers.length) {
+      return Boolean(slot.number && lessonNumbers.includes(String(slot.number)));
+    }
+
+    if (lessonNumbers.length > 1) {
+      return lessonNumbers[0] === slotNumbers[0] &&
+        lessonNumbers[lessonNumbers.length - 1] === slotNumbers[slotNumbers.length - 1];
+    }
+
+    return slotNumbers.includes(lessonNumbers[0]);
+  }
+
   function displayLesson(lesson, slot) {
     const current = text(lesson.lesson);
     if (!slot) return current;
@@ -387,6 +414,7 @@ window.ScheduleTimeStore = (() => {
     applyTimes,
     findSlotForLesson,
     getSlots,
+    matchesSlot,
     normalizeSlot,
     setDateSlots,
     clearDateSlots,
