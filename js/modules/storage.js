@@ -1,7 +1,6 @@
 window.ScheduleStorage = (() => {
 const STORAGE_KEY = "nttek-schedule-ui-v2";
 const ROOM_CACHE_KEY = `${STORAGE_KEY}:rooms`;
-const ROOM_CATALOG_KEY = `${STORAGE_KEY}:room-catalog`;
 const SCHEDULE_META_KEY = `${STORAGE_KEY}:schedule-meta`;
 const SCHEDULE_DATA_KEY = `${STORAGE_KEY}:schedule-data`;
 const CATALOG_CACHE_KEY = `${STORAGE_KEY}:catalogs`;
@@ -34,23 +33,6 @@ function readRoomCache() {
 function writeRoomCache(cache) {
   try {
     localStorage.setItem(ROOM_CACHE_KEY, JSON.stringify(cache));
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-function readRoomCatalog() {
-  try {
-    return JSON.parse(localStorage.getItem(ROOM_CATALOG_KEY)) || [];
-  } catch {
-    return [];
-  }
-}
-
-function writeRoomCatalog(catalog) {
-  try {
-    localStorage.setItem(ROOM_CATALOG_KEY, JSON.stringify(catalog));
     return true;
   } catch {
     return false;
@@ -111,12 +93,10 @@ function writeCatalogCache(cache) {
 return {
   readSavedState,
   readRoomCache,
-  readRoomCatalog,
   readCatalogCache,
   readScheduleDataCache,
   readScheduleMetaCache,
   writeRoomCache,
-  writeRoomCatalog,
   writeCatalogCache,
   writeScheduleDataCache,
   writeScheduleMetaCache,

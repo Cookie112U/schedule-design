@@ -198,7 +198,6 @@ if (state.selectedEntity && !state.lastSelectedByMode[state.mode]) {
 }
 
 const roomCache = typeof readRoomCache === "function" ? readRoomCache() : {};
-let roomCatalog = typeof readRoomCatalog === "function" ? readRoomCatalog() : [];
 const catalogCache = typeof readCatalogCache === "function" ? readCatalogCache() : {};
 const scheduleDataCache = typeof readScheduleDataCache === "function" ? readScheduleDataCache() : {};
 const scheduleMetaCache = typeof readScheduleMetaCache === "function" ? readScheduleMetaCache() : {};
@@ -431,53 +430,6 @@ function writeCachedRooms(dateKey, rooms, revision = scheduleRevisionByDate.get(
   };
   pruneRoomCache();
   persistRoomCache();
-}
-
-function roomIdentity(room) {
-  return `${scheduleTransform.buildingNumber(room?.building)}|${String(room?.room || "").trim().toLocaleLowerCase("ru-RU")}`;
-}
-
-function rememberRoomCatalog(rooms = []) {
-  const catalog = new Map(roomCatalog.map((room) => [roomIdentity(room), room]));
-  let changed = false;
-  rooms.forEach((room) => {
-    if (!room?.room || !room?.building) return;
-    const key = roomIdentity(room);
-    if (!catalog.has(key)) {
-      catalog.set(key, { room: room.room, building: room.building, busy: false, lessons: [] });
-      changed = true;
-    }
-  });
-  if (!changed) return roomCatalog;
-  roomCatalog = Array.from(catalog.values());
-  if (typeof writeRoomCatalog === "function") writeRoomCatalog(roomCatalog);
-  return roomCatalog;
-}
-
-function mergeRoomsWithCatalog(rooms = [], catalog = roomCatalog) {
-  const merged = new Map(catalog.map((room) => [roomIdentity(room), { ...room, busy: false, lessons: [] }]));
-  rooms.forEach((room) => merged.set(roomIdentity(room), room));
-  return Array.from(merged.values());
-}
-
-function hasPhysicalRoomCatalog() {
-  const virtualRooms = /^(?:дистант|улица|музей|с-з|а-з|ч-з)$/i;
-  return roomCatalog.filter((room) => !virtualRooms.test(String(room.room || "").trim())).length >= 8;
-}
-
-async function hydrateRoomCatalog(dateKey) {
-  rememberRoomCatalog(Object.values(roomCache).flatMap((entry) => entry?.rooms || []));
-  if (hasPhysicalRoomCatalog()) return roomCatalog;
-
-  const candidates = Array.from(apiState.scheduleDates)
-    .filter((date) => date !== dateKey && ![0, 6].includes(parseDate(date).getDay()))
-    .sort((left, right) => Math.abs(parseDate(left) - parseDate(dateKey)) - Math.abs(parseDate(right) - parseDate(dateKey)))
-    .slice(0, 5);
-  const results = await Promise.allSettled(candidates.map((date) => scheduleService.getClassrooms({ dateKey: date })));
-  results.forEach((result) => {
-    if (result.status === "fulfilled") rememberRoomCatalog(result.value);
-  });
-  return roomCatalog;
 }
 
 function setScheduleUrl(url = "") {
@@ -1236,6 +1188,21 @@ function normalizeRoomForSelectedSlot(room) {
   };
 }
 
+function roomsForDisplay(rooms, dateKey) {
+  const normalized = rooms.filter(roomMatchesBuilding).map(normalizeRoomForSelectedSlot);
+  if (parseDate(dateKey).getDay() !== 6) return normalized;
+
+  return normalized.flatMap((room) => {
+    if (!room.busy) return [];
+    if (!/^дистант$/i.test(String(room.room || "").trim())) return [room];
+    return room.matchedLessons.map((lesson) => ({
+      ...room,
+      lessons: [lesson],
+      matchedLessons: [lesson]
+    }));
+  });
+}
+
 function roomLessonPreview(item) {
   return item.matchedLessons?.[0] || item.lessons?.[0] || null;
 }
@@ -1251,17 +1218,11 @@ async function loadRoomsForDate(dateKey, force = false) {
 
   const revision = scheduleRevisionByDate.get(dateKey) || "";
   const cached = force || revisionChanged ? null : readCachedRooms(dateKey, revision);
-  if (cached) {
-    rememberRoomCatalog(cached);
-    const catalog = await hydrateRoomCatalog(dateKey);
-    return mergeRoomsWithCatalog(cached, catalog);
-  }
+  if (cached) return cached;
 
   const rooms = await scheduleService.getClassrooms({ dateKey, force: force || revisionChanged });
   writeCachedRooms(dateKey, rooms, revision);
-  rememberRoomCatalog(rooms);
-  const catalog = await hydrateRoomCatalog(dateKey);
-  return mergeRoomsWithCatalog(rooms, catalog);
+  return rooms;
 }
 
 function roomMatchesBuilding(room) {
@@ -1290,9 +1251,7 @@ async function renderRooms({ force = false } = {}) {
 
     roomCards.innerHTML = "";
 
-    const preparedRooms = rooms
-      .filter(roomMatchesBuilding)
-      .map(normalizeRoomForSelectedSlot)
+    const preparedRooms = roomsForDisplay(rooms, dateKey)
       .sort((a, b) => sortRu(a.room, b.room));
 
     if (!preparedRooms.length) {
