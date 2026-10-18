@@ -109,6 +109,48 @@ test("cached catalogs survive a temporary API failure after reload", async ({ pa
   await expect(page.locator(".select-option-main", { hasText: "Воинкова НА" })).toBeVisible();
 });
 
+test("Saturday rooms keep a multi-column layout and switch occupancy by lesson", async ({ page }) => {
+  const dateKey = "2026-10-17";
+  const meta = {
+    date: "17.10.2026",
+    countOfChanges: 1,
+    lastChange: "2026-10-16T09:00:00Z",
+    url: "https://erp.nttek.ru/storage/test.xlsx",
+    data: {
+      buildings: [{ number: "КОРПУС 1", address: "(Ленина, 2а)" }],
+      groups: [["1ИС1"]],
+      teachers: ["Иванов ИИ"]
+    }
+  };
+  const roomNames = ["11", "12", "13", "14", "15", "16"];
+  const all = [{
+    building: meta.data.buildings[0],
+    schedule: roomNames.map((room, index) => ({
+      name: `1ИС${index + 1}`,
+      schedule: [{ lesson: index < 3 ? "1-2" : "3-4", name: "Тест", teachers: ["Иванов ИИ"], rooms: [room] }]
+    }))
+  }];
+
+  await page.addInitScript(({ date }) => {
+    localStorage.setItem("nttek-schedule-ui-v2", JSON.stringify({ selectedDate: date, visibleDate: date }));
+  }, { date: dateKey });
+  await page.route("**/api/schedule/legacy", (route) => route.fulfill({ json: [dateKey] }));
+  await page.route(`**/api/schedule/legacy/${dateKey}/all`, (route) => route.fulfill({ json: all }));
+  await page.route(`**/api/schedule/legacy/${dateKey}`, (route) => route.fulfill({ json: meta }));
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto(baseURL, { waitUntil: "domcontentloaded" });
+  await page.locator("#roomsButton").click();
+  await expect(page.locator("#roomCards .room-card")).toHaveCount(6);
+
+  const columns = await page.locator("#roomCards .room-card").evaluateAll((cards) =>
+    new Set(cards.map((card) => Math.round(card.getBoundingClientRect().left))).size
+  );
+  expect(columns).toBeGreaterThanOrEqual(2);
+
+  await page.locator("#pairSelect").selectOption({ index: 1 });
+  await expect(page.locator("#roomCards .room-card.busy")).toHaveCount(3);
+});
+
 test("saved theme and holiday are applied before app initialization", async ({ page }) => {
   await page.addInitScript(() => {
     localStorage.setItem("nttek-schedule-ui-v2", JSON.stringify({ theme: "dark", holidayMode: "new-year" }));

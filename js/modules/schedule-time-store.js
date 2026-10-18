@@ -330,10 +330,10 @@ window.ScheduleTimeStore = (() => {
   function matchesSlot(lesson = {}, slot = null) {
     if (!slot) return true;
 
-    const lessonKeys = [lesson.slotKey, lesson.lesson, lesson.pair, lesson.time]
+    const lessonKeys = [lesson.slotKey, lesson.lesson, lesson.pair]
       .map(normalizeComparable)
       .filter(Boolean);
-    const slotKeys = [slot.value, slot.label, slot.pair, slot.time, slot.displayLesson]
+    const slotKeys = [slot.value, slot.label, slot.pair, slot.displayLesson]
       .map(normalizeComparable)
       .filter(Boolean);
     if (slotKeys.some((key) => lessonKeys.includes(key))) return true;
@@ -343,7 +343,9 @@ window.ScheduleTimeStore = (() => {
       ? slot.lessons.map(String)
       : lessonParts(slot.displayLesson || slot.value || slot.label);
     if (!lessonNumbers.length || !slotNumbers.length) {
-      return Boolean(slot.number && lessonNumbers.includes(String(slot.number)));
+      const lessonTime = normalizeComparable(lesson.time);
+      const slotTime = normalizeComparable(slot.time);
+      return Boolean(lessonTime && slotTime && lessonTime === slotTime);
     }
 
     if (lessonNumbers.length > 1) {

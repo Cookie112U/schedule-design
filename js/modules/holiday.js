@@ -16,7 +16,7 @@ function inAbsoluteRange(date, fromYear, fromMonth, fromDay, toYear, toMonth, to
 function autoHoliday(today) {
   if (inRange(today, 11, 22, 0, 10)) return "new-year";
   if (inRange(today, 1, 21, 1, 24)) return "february-23";
-  if (inRange(today, 2, 6, 2, 7)) return "march-8";
+  if (inRange(today, 2, 6, 2, 8)) return "march-8";
   if (inRange(today, 4, 7, 4, 9)) return "victory-day";
   if (inRange(today, 5, 10, 5, 13)) return "russia-day";
   if (inRange(today, 8, 1, 8, 5)) return "september";

@@ -34,6 +34,7 @@ function assertNoTagilHoliday() {
 function assertFavicon() {
   const html = read("index.html");
   assert(/<link rel="icon" type="image\/png" href="Img\/logo_small\.png" \/>/.test(html), "favicon должен использовать Img/logo_small.png");
+  assert(!/rel="icon"[^>]+Favicon\.svg/.test(html), "старый SVG не должен перекрывать favicon с логотипом НТТЭК");
   assert(fs.existsSync(path.join(root, "Img/logo_small.png")), "Img/logo_small.png должен существовать");
 }
 
@@ -133,6 +134,14 @@ function assertRuntimeScheduleFlow() {
     { lesson: "8-9", discipline: "Тест" }
   ], "2026-09-19");
   assert.deepStrictEqual(Array.from(saturdayLessons.map((lesson) => lesson.time)), ["8:30-10:55", "11:00-13:25"]);
+  assert.strictEqual(win.ScheduleTimeStore.matchesSlot({ lesson: "3" }, saturdaySlots[1]), true, "3 урок должен входить во вторую субботнюю пару");
+  assert.strictEqual(win.ScheduleTimeStore.matchesSlot({ lesson: "4" }, saturdaySlots[1]), true, "4 урок должен входить во вторую субботнюю пару");
+  assert.strictEqual(win.ScheduleTimeStore.matchesSlot({ lesson: "8-9" }, saturdaySlots[3]), true, "8-9 должны входить в четвёртую субботнюю пару");
+  assert.strictEqual(
+    win.ScheduleTimeStore.matchesSlot({ lesson: "1-2", time: "8:30-10:55" }, saturdaySlots[1]),
+    false,
+    "одинаковое время двух субботних пар не должно смешивать их аудитории"
+  );
 
   const mondayFourthPair = win.ScheduleTimeStore.getSlots("2026-10-19")
     .find((slot) => slot.displayLesson === "8-9");
@@ -280,8 +289,10 @@ function assertDownloadAndRoomCacheSupport() {
   assert(/matchesSlot\(lesson, slot\)/.test(app) && /function matchesSlot/.test(read("js/modules/schedule-time-store.js")), "занятость должна сопоставляться по диапазону уроков, а не по номеру пары");
   assert(/const roomSlots = deriveTimeSlotsFromRooms\(rooms\)/.test(app) && /if \(roomSlots\.length\)/.test(app), "варианты уроков занятости должны строиться из фактических данных выбранной даты");
   assert(!/settle\("classrooms", request\.loadClassrooms/.test(service), "каталоги не должны ждать загрузку всех аудиторий");
+  assert.strictEqual((service.match(/function getScheduleMeta/g) || []).length, 1, "сервис должен иметь один обработчик метаданных кэша");
 
   assert(/room-meta/.test(app) && /room-person/.test(scheduleCss), "карточки аудиторий должны показывать группу/педагога чипами");
+  assert(/grid-template-columns:\s*repeat\(auto-fill, minmax\(7rem, 1fr\)\)/.test(scheduleCss), "аудитории должны сохранять несколько колонок на узких экранах");
 }
 function assertCurrentUxRequirements() {
   const html = read("index.html");
@@ -499,9 +510,11 @@ function assertTeacherNormalization() {
 
 async function assertScheduleCaching() {
   let calls = 0;
+  let metaCalls = 0;
   const win = {
     ScheduleRequest: {
       apiMode: () => "legacy",
+      loadScheduleMeta: async () => ({ countOfChanges: ++metaCalls }),
       loadWeekSchedule: () => new Promise((resolve) => setTimeout(() => {
         calls += 1;
         resolve([]);
@@ -520,6 +533,13 @@ async function assertScheduleCaching() {
   await Promise.all([win.ScheduleService.getWeekDay(params), win.ScheduleService.getWeekDay(params)]);
   await win.ScheduleService.getWeekDay(params);
   assert.strictEqual(calls, 1, "параллельные запросы и пустой ответ должны использовать один кешированный результат");
+
+  const metaParams = { dateKey: "2026-10-17" };
+  await Promise.all([win.ScheduleService.getScheduleMeta(metaParams), win.ScheduleService.getScheduleMeta(metaParams)]);
+  await win.ScheduleService.getScheduleMeta(metaParams);
+  assert.strictEqual(metaCalls, 1, "метаданные одной даты должны использовать общий кэш");
+  await win.ScheduleService.getScheduleMeta({ ...metaParams, force: true });
+  assert.strictEqual(metaCalls, 2, "принудительная проверка должна обновлять метаданные выбранной даты");
 }
 
 async function assertLegacyMetaRefresh() {
@@ -573,6 +593,7 @@ function assertAutomaticHolidayDates() {
     [new Date(2027, 1, 24), "february-23"],
     [new Date(2027, 2, 6), "march-8"],
     [new Date(2027, 2, 7), "march-8"],
+    [new Date(2027, 2, 8), "march-8"],
     [new Date(2027, 3, 30), "easter"],
     [new Date(2027, 4, 3), "easter"],
     [new Date(2027, 4, 7), "victory-day"],
