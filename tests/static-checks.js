@@ -284,7 +284,9 @@ function assertDownloadAndRoomCacheSupport() {
   assert(/На данную дату нет расписания/.test(app), "404 выбранной legacy даты должен показывать понятное сообщение");
 
   assert(/readRoomCache/.test(storage) && /writeRoomCache/.test(storage), "storage должен иметь кеш аудиторий");
+  assert(/readRoomCatalog/.test(storage) && /writeRoomCatalog/.test(storage), "storage должен сохранять каталог аудиторий отдельно от занятости по датам");
   assert(/loadRoomsForDate/.test(app) && /writeCachedRooms/.test(app), "app должен кешировать аудитории по выбранной дате");
+  assert(/hydrateRoomCatalog/.test(app) && /mergeRoomsWithCatalog/.test(app), "субботняя занятость должна дополняться известными свободными аудиториями");
   assert(/cached\.revision !== revision/.test(app) && /getScheduleMeta\(\{ dateKey, force \}\)/.test(app), "кеш аудиторий должен сбрасываться при изменении ревизии расписания без лишних запросов при каждом переключении пары");
   assert(/matchesSlot\(lesson, slot\)/.test(app) && /function matchesSlot/.test(read("js/modules/schedule-time-store.js")), "занятость должна сопоставляться по диапазону уроков, а не по номеру пары");
   assert(/const roomSlots = deriveTimeSlotsFromRooms\(rooms\)/.test(app) && /if \(roomSlots\.length\)/.test(app), "варианты уроков занятости должны строиться из фактических данных выбранной даты");

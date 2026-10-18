@@ -111,6 +111,7 @@ test("cached catalogs survive a temporary API failure after reload", async ({ pa
 
 test("Saturday rooms keep a multi-column layout and switch occupancy by lesson", async ({ page }) => {
   const dateKey = "2026-10-17";
+  const catalogDate = "2026-10-16";
   const meta = {
     date: "17.10.2026",
     countOfChanges: 1,
@@ -123,24 +124,32 @@ test("Saturday rooms keep a multi-column layout and switch occupancy by lesson",
     }
   };
   const roomNames = ["11", "12", "13", "14", "15", "16"];
-  const all = [{
+  const saturday = [{
     building: meta.data.buildings[0],
-    schedule: roomNames.map((room, index) => ({
-      name: `1ИС${index + 1}`,
-      schedule: [{ lesson: index < 3 ? "1-2" : "3-4", name: "Тест", teachers: ["Иванов ИИ"], rooms: [room] }]
-    }))
+    schedule: [
+      { name: "1ИС1", schedule: [{ lesson: "1-2", name: "Тест", teachers: ["Иванов ИИ"], rooms: ["дистант"] }] },
+      { name: "1ИС2", schedule: [{ lesson: "3-4", name: "Тест", teachers: ["Иванов ИИ"], rooms: ["11"] }] }
+    ]
+  }];
+  const weekdayCatalog = [{
+    building: meta.data.buildings[0],
+    schedule: roomNames.map((room, index) => ({ name: `1ИС${index + 1}`, schedule: [{ lesson: "1-2", name: "Тест", rooms: [room] }] }))
   }];
 
   await page.addInitScript(({ date }) => {
     localStorage.setItem("nttek-schedule-ui-v2", JSON.stringify({ selectedDate: date, visibleDate: date }));
   }, { date: dateKey });
-  await page.route("**/api/schedule/legacy", (route) => route.fulfill({ json: [dateKey] }));
-  await page.route(`**/api/schedule/legacy/${dateKey}/all`, (route) => route.fulfill({ json: all }));
-  await page.route(`**/api/schedule/legacy/${dateKey}`, (route) => route.fulfill({ json: meta }));
+  await page.route("**/api/schedule/legacy**", (route) => {
+    const pathname = new URL(route.request().url()).pathname;
+    if (pathname.endsWith(`/${dateKey}/all`)) return route.fulfill({ json: saturday });
+    if (pathname.endsWith(`/${catalogDate}/all`)) return route.fulfill({ json: weekdayCatalog });
+    if (pathname.endsWith(`/${dateKey}`) || pathname.endsWith(`/${catalogDate}`)) return route.fulfill({ json: meta });
+    return route.fulfill({ json: [dateKey, catalogDate] });
+  });
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto(baseURL, { waitUntil: "domcontentloaded" });
   await page.locator("#roomsButton").click();
-  await expect(page.locator("#roomCards .room-card")).toHaveCount(6);
+  await expect(page.locator("#roomCards .room-card")).toHaveCount(7);
 
   const columns = await page.locator("#roomCards .room-card").evaluateAll((cards) =>
     new Set(cards.map((card) => Math.round(card.getBoundingClientRect().left))).size
@@ -148,7 +157,7 @@ test("Saturday rooms keep a multi-column layout and switch occupancy by lesson",
   expect(columns).toBeGreaterThanOrEqual(2);
 
   await page.locator("#pairSelect").selectOption({ index: 1 });
-  await expect(page.locator("#roomCards .room-card.busy")).toHaveCount(3);
+  await expect(page.locator("#roomCards .room-card.busy")).toHaveCount(1);
 });
 
 test("saved theme and holiday are applied before app initialization", async ({ page }) => {
